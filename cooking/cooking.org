@@ -1,0 +1,80 @@
+#+TITLE: Cooking: My Scientific Approach
+If we google a particular dish, we usually find many different receipts. I find all receipts do something right 
+(sometimes, something wrong too). I try to learn from each receipt, combine the right practice and also understand 
+the science behind.  This blog is to document my success, my failure and my thinking. 
+ 
+* Scramble Eggs with Tomatoes
+#+attr_html: :width 400px
+#+CAPTION: Scramble Eggs with Tomatoes: first try -- semi-failure 400px 
+#+NAME: fig:ScrambleEggTomatoes-1
+[[file:pics/ScrambleEggTomatoes-1.JPG]]
+
+What I did: 
++ Two eggs + two tomatoes 
++ whisk the eggs
++ add 1 tbsp butter to pan, preheat until butter begins to sizzle. 
++ pour the whisked eggs, let it set for 3-4 minutes, heat level on 6. 
+  Turn it around, scramble, then remove to a plate. 
++ Put the tomatoes, high heat, squeeze/press the tomato 
+  until the tomatoes becomes ()
++ add back the eggs, mix well the tomato and immediately remove to a plate.
+  Eggs are delicate and will continue to 
+Afterthoughts:
+eggs are not fluffy enough. Possible causes: 
++ [[http://www.williams-sonoma.com/recipe/scrambled-eggs-with-tomato-cheddar-and-basil.html][Williams-sonoma.com]] , we should add water to eggs which chinese cooking guide says it is a bad idea.
++ not enough egg and eggs span too thin on the pan. 
++ not whisked enough. 
++ the eggs are overcook. Maybe 1 minute is enough. 
+  
+* Honey baked Chicken Wing 
+ I almost follow the instruction of [[https://www.youtube.com/watch?v=fmlgqoUo0es][this video]] except 
+that I brash with the honey at the very end and turn the oven to  
+"broil" to make the skin crispy. This is a common-use of broil [fn:1]. 
+This is what I did: 
++ Put the wings in a bowl, add dark soy sauce[fn:2], black pepper, salt. 
+  Let the wings set for four hours (The video receipt suggests two hours).
++ preheat the oven to 380^oF, bake the wings on a baking rack for 30min, turn
+  the wings around half way to bake evenly on both side. 
++ Mix 1 tbsp honey with 1/2 tbsp water, coat the wings, turn to oven to broil, 
+  and broil the wings for 4-5 minutes. 
++ Cool and Serve. 
+
+Afterthoughts:
++ The wings are crispy and the taste is just right. 
+  The wings are a bit burnt 
+  (which seems to be a common problem when baked with sugar. 
+   All pictures online show the same problem). 
+  Try reduce the broil time to 3 minutes next time. 
++ The wings was on the lower rack of the oven when broiled. 
+  Cooking guides[2] suggest broiling is done close to the heat source 
+  (2-5 inches from the flame(top burner). Try to place the honey-coated wings
+  on the upper rack of the oven when broil next time. 
++ The step of turning around wing half way when baked may not be necessary.
+  The whole idea of baking is to use the ambient hot air instead of 
+  the infrared radiation. If an oven is designed properly, 
+  turning the wings around half way may not be necessary. Try to cut this
+  step next time.
+  - Another experiment confirms this: no need to turn the wing around halfway. 
+    When baked on a rack, both side are evenly cooked.  
+
+* Footnotes
+
+[fn:1] http://recipes.howstuffworks.com/tools-and-techniques/question228.htm
+
+[fn:2] There are two types of soy source used in Asian cooking:  light soy sauce and 
+       dark soy sauce.  Dark soy sauce is thicker, easier to stick to the material and 
+       hence a better choice for baking. Dark soy source also adds nice color to a dish. According to 
+       [[http://chinesefood.about.com/od/chinesefoodglossary1/g/dark-soy-sauce.htm][this]], dark soy source may contain up to 10 times anti-oxidants found in red wine, and
+       has the health benefits of improving blood flow. However, dark soy sauce has a high sodium content. 
+       As far as I know, study shows correlations between high sodium intake and high blood pressure. You might
+       feel confused: Then is it dark soy sauce better or worse for our health? Well, it has something good and also 
+       something bad, just like everything/everyone in this universe. 
+
+
+
+   
+ 
+
+ 
+  
+  
