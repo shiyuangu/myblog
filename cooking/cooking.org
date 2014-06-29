@@ -8,7 +8,7 @@ the science behind.  This blog is to document my success, my failure and my thin
 #+CAPTION: Scramble Eggs with Tomatoes: first try -- semi-failure 400px 
 #+NAME: fig:ScrambleEggTomatoes-1
 [[file:pics/ScrambleEggTomatoes-1.JPG]]
-
+** First Attempt:
 What I did: 
 + Two eggs + two tomatoes 
 + whisk the eggs
@@ -16,7 +16,7 @@ What I did:
 + pour the whisked eggs, let it set for 3-4 minutes, heat level on 6. 
   Turn it around, scramble, then remove to a plate. 
 + Put the tomatoes, high heat, squeeze/press the tomato 
-  until the tomatoes becomes ()
+  until the tomatoes becomes (puree)
 + add back the eggs, mix well the tomato and immediately remove to a plate.
   Eggs are delicate and will continue to 
 Afterthoughts:
@@ -25,6 +25,30 @@ eggs are not fluffy enough. Possible causes:
 + not enough egg and eggs span too thin on the pan. 
 + not whisked enough. 
 + the eggs are overcook. Maybe 1 minute is enough. 
+
+** Second Attempt:
++ Three eggs + half cup water + two tomatoes(with wrinkles and seems about to 
+  go bad). 
++ mix water and eggs and whisk until fully fluffy
++ turn the stove to heat level 6, add tbsp buffer to pan, preheat until butter begin to sizzle. 
++ pour the whisked eggs. This time it is too fluffy and the water in the egg
+  evaporates and the egg mixture explored too much and I have to stir, the 
+  curd are too small. And I clearly a lot of hole in the curd which indicates
+  too much water.
+** Third Attempt:
++ 1 teaspoon water + two eggs + two tomatoes
++ This time, enough wihisk, but the eggs are not tender and juicy, two possible
+causes: 1): Not enough water, next try 1/4 cup + two eggs. 2). overcook. 
+this time is a little more than two minutes before turn. Next try 1 minutes and turn. 
+
+
+Afterthoughts: 
++ The egg is very tender and juicy and actually tastes good. This is probably
+because the curd is more fluffy than the first attempt. Adding water might 
+help produce more fluffy curd. Next try add less water but whisk harder to see
+whether we can produce as fluffy curb as this time.  
++ tomatoes with wrinkles is less sour and is better for this dish. 
+   
   
 * Honey baked Chicken Wing 
  I almost follow the instruction of [[https://www.youtube.com/watch?v=fmlgqoUo0es][this video]] except 
@@ -55,7 +79,16 @@ Afterthoughts:
   turning the wings around half way may not be necessary. Try to cut this
   step next time.
   - Another experiment confirms this: no need to turn the wing around halfway. 
-    When baked on a rack, both side are evenly cooked.  
+    When baked on a rack, both side are evenly cooked.
+#+attr_html: :width 400px
+#+CAPTION: Mushroom Chicken(over-boiled).   
+#+NAME: fig:MushroomChicken2nd  
+[[file:pics/HoneyBakedChicken2nd.jpg]]
+
+#+attr_html: :width 400px
+#+CAPTION: Mushroom Chicken(about right).   
+#+NAME: fig:MushroomChicken3rd
+[[file:pics/HoneyBakedChicken3rd.jpg]]
 
 * Footnotes
 
@@ -70,11 +103,13 @@ Afterthoughts:
        feel confused: Then is it dark soy sauce better or worse for our health? Well, it has something good and also 
        something bad, just like everything/everyone in this universe. 
 
+* Mushroom chicken
++ pre-soak mushroom (forgot to steam it. Would make difference?)
++ stir fry the chicken, just a little bit, add the soaked mushroom and the water
++ low first then change to heat level 2, watch and KEEP the water boiling SLOWLY.
++ turn off the stove when there is still a litter water, add chopped green onion and let the pan sit for a few minutes. 
+#+attr_html: :width 400px
+#+CAPTION: Mushroom Chicken 2nd Attempt.   
+#+NAME: fig:MushroomChicken2nd
+[[file:pics/MushroomChicken2nd.jpg]]
 
-
-   
- 
-
- 
-  
-  
