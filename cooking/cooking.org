@@ -129,6 +129,24 @@ Something easy to forget:
 about to fall apart. 
 google science of slow cooking. 
 
+Attempt 3: 
+Ingredients:
++ (forget to track the water, but about half cup), 
++ 3 wing drumettes, chopped into two. 
++ Green Onions, Garlic, 
+
+Directions:
+  1. Heat olive oil on high heat, add garlic and big green onion. When the smell come out, add the drumettes and stir fry until light (brown?.)
+  2. Add shiitakes mushroom and the soaked water, reduce the heat to low(about 1.5). Cover the skillet and let cook for about 50 minutes. 
+  3. After 50 minutes, there should be still a little liquid left in the skillet. Raise heat to high. Add light sour sauce and salts, stir for a few second. Add fined chopped green onion and serve. 
+
+Results: 
+  1. The taste is about right and the taste of mushroom is good. The chicken might be a bit bland for some people. We could have add a bit more salt. 
+  2. The drumette is not cooked long enough and the connective tissue is not softened. Next try heat 1.5 + 2 hours. 
+
+
+
+
 #+attr_html: :width 400px
 #+CAPTION: Mushroom Chicken 2nd Attempt.   
 #+NAME: fig:MushroomChicken2nd
