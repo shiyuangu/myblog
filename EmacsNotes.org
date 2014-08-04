@@ -1,0 +1,28 @@
+-----------------------
+#+TITLE: Hello, World
+#+DATE: 03-08-2014
+#+CATEGORY: 
+-----------------------
+* Orgmode: 
+** Writing Blog with Org2blog
+I modified org2blg to use a customized backend. 
+1. Enable Org2blog Major mode (otherwise, some functions are not available)
+   #+BEGIN_SRC emacs-lisp
+   M-x org2blog/wp-mode
+   #+END_SRC
+2. Start a new blog post: 
+   M-x org2blog/wp-new-entry
+3. Publish the post
+   |---------------------------+-------+-----------------------------------------|
+   | post buffer as draft      | C-c d | M-x org2blog/wp-post-buffer             |
+   | publish buffer            | C-c p | C-u M-x org2blog/wp-post-buffer         |
+   | post buffer as page draft | C-c D | M-x org2blog/wp-post-buffer-as-page     |
+   | publish buffer as page    | C-c P | C-u M-x org2blog/wp-post-buffer-as-page |
+   |---------------------------+-------+-----------------------------------------|
+4. Detail: [[https://github.com/punchagan/org2blog]]
+
+** Parse buffer:  
+Place cursor inside the block and `C-c C-c`
+#+BEGIN_SRC emacs-lisp
+(pp-to-string (org-element-parse-buffer))
+#+END_SRC

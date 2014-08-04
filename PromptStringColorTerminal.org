@@ -1,0 +1,17 @@
+In Bash, PS1 sets the prompt string. There are four kinds of prompt in bash PS1, PS2, PS3, PS4. "\" denotes escape character. In the follow example: 
+* \[ : begin a sequence of non-printing characters, which could be used to embed a terminal control sequence into the prompt 
+* \] : end a sequence of non-printing characters
+* The sequence in the format \033[n1;n2m is a [[http://en.wikipedia.org/wiki/ANSI_escape_code][ANSI Escape Code]] for colors. \033 is an CSI(Control Sequence Introducer)
+** \033[1;34m changes foreground color(30+i) to  bold(1) blue(i=4); \033[1;32m changes foreground color to bold(1) green(i=2); \033[0m resets all attributes
+** [\u] $USER enclosed by brackets; \w working directory.  
+#+BEGIN_SRC shell 
+#!/usr/bin/bash
+PS1="\[\033[1;34m\][\u]\[\033[1;32m\][\w]\[\033[0m\]> "
+#+END_SRC
+
+Zsh sets colors differently than Bash[fn:1].   [[ANSI Escape Code]] seems not recognized. Instead, set
+
+* Footnotes
+
+[fn:1]  [[https://wiki.archlinux.org/index.php/zsh][Archive Linux Wiki]]
+ 

@@ -1,0 +1,2 @@
+* Similarities:
++ In place documentation(docstring) 

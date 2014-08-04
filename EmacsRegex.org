@@ -1,0 +1,66 @@
+#+TITLE: Elisp Regular Expression Examples
+This blog shows some usages of regex in production codes. 
+
+* Orgmode backend ox-latex
+
++ The regex *\\([^\\]\\|^\\)\\([%$#&{}_]\\)* matches the the characters % $ { } _  if they are at the beginning of the string or if not at the beginning, the preceding character is not a backslash. The second ^ matches the beginning of a string or after a newline character.
+
+#+BEGIN_SRC elisp
+(defun org-latex-plain-text (text info)
+  "Transcode a TEXT string from Org to LaTeX.
+TEXT is the string to transcode.  INFO is a plist holding
+contextual information."
+  (let ((specialp (plist-get info :with-special-strings))
+	(output text))
+    ;; Protect %, #, &, $, _, { and }.
+    (while (string-match "\\([^\\]\\|^\\)\\([%$#&{}_]\\)" output)
+      (setq output
+	    (replace-match
+	     (format "\\%s" (match-string 2 output)) nil t output 2)))
+    ;; Protect ^.
+    ;; sgu: In latex, the literal ^ is \^{}. So the next lisp replaces ^, if it's at the beginning or not preceded by a backslash,  by \^{} (Place the accent ^ over a space, which produce the character ^).
+    (setq output
+	  (replace-regexp-in-string
+	   "\\([^\\]\\|^\\)\\(\\^\\)" "\\\\^{}" output nil nil 2))
+
+    ;; sgu: proctect the backslash, if the backslash is not followed by the
+    ;; sgu: special characters, then the backslash is not for escape but 
+    ;; sgu: but an literal backslash. 
+    ;; sgu: \(?: ... \) is a non-cpturing group(shy group). 
+    ;; Protect \.  If special strings are used, be careful not to
+    ;; protect "\" in "\-" constructs.
+    (let ((symbols (if specialp "-%$#&{}^_\\" "%$#&{}^_\\")))
+      (setq output
+	    (replace-regexp-in-string
+	     (format "\\(?:[^\\]\\|^\\)\\(\\\\\\)\\(?:[^%s]\\|$\\)" symbols)
+	     "$\\backslash$" output nil t 1)))
+    ;; Protect ~.
+    (setq output
+	  (replace-regexp-in-string
+	   "\\([^\\]\\|^\\)\\(~\\)" "\\textasciitilde{}" output nil t 2))
+    ;; Activate smart quotes.  Be sure to provide original TEXT string
+    ;; since OUTPUT may have been modified.
+    (when (plist-get info :with-smart-quotes)
+      (setq output (org-export-activate-smart-quotes output :latex info text)))
+    ;; LaTeX into \LaTeX{} and TeX into \TeX{}.
+    (let ((case-fold-search nil)
+	  (start 0))
+      (while (string-match "\\<\\(\\(?:La\\)?TeX\\)\\>" output start)
+	(setq output (replace-match
+		      (format "\\%s{}" (match-string 1 output)) nil t output)
+	      start (match-end 0))))
+    ;; Convert special strings.
+    (when specialp
+      (setq output
+	    (replace-regexp-in-string "\\.\\.\\." "\\ldots{}" output nil t)))
+    ;; Handle break preservation if required.
+    (when (plist-get info :preserve-breaks)
+      (setq output (replace-regexp-in-string
+		    "\\(\\\\\\\\\\)?[ \t]*\n" " \\\\\\\\\n" output)))
+    ;; Return value.
+    output))
+
+
+;;;; Planning
+
+#+END_SRC

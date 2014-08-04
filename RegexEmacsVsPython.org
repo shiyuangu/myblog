@@ -1,0 +1,14 @@
+* Regular Expression: Emacs vs Python 
+
++ Need to double the backslash in both Emacs and python ("backslash plague"). In python, we can also use raw string to avoid doubling backslashes.  
++ The greedy/non-greedy version between Emacs and Python are similar. 
+
+| Regex                   | Emacs | Python |
+|-------------------------+-------+--------|
+| word boundary           | \b    | \b     |
+|-------------------------+-------+--------|
+| string boundary (start) | ^     | ^      |
+| string boundary (end)   | $     | $      |
+|-------------------------+-------+--------|
+|                         |       |        |
+
