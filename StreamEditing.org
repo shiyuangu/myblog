@@ -1,0 +1,76 @@
+#+BLOG: wordpress
+#+POSTID: 58
+-----------------------
+#+TITLE: Line Stream Editing
+#+DATE: <2014-08-13 Wed>
+#+CATEGORY: Scripting
+-----------------------
+* /sed/
+** Features 
+ + Make only one pass over the inputs and hence more efficient. 
+ + Ability to filter text in a pipeline
+  
+** Synopsis: 
+    #+BEGIN_SRC shell
+      sed [OPTION]... {script} [input-file]
+    #+END_SRC
+    - The script is actually the first non-option parameter, which sed specially considers a script and not an input file if (and only if) none of the other options specifies a script to be executed, that is if neither of the -e and -f options is specified. `man sed` calls it {script-only-if-no-other-script}. 
+
+    - When multiple -e, -f are givens, the script is understood to mean the in-order catenation [[https://www.gnu.org/software/sed/manual/sed.html#sed-Programs][Cf. here]]
+    - /sed/ maintains two spaces, the active pattern space, and the hold space. Both are initially empty. /sed/ processes the input line by line. The input  can be a file, a list of files or /stdin/, denoted by the character -. /sed/ starts each cycle by reading in the line, removing any trailing newline and placing it in the pattern space. Then the script commands are executed. When all commands in the script are finished, the contents of the pattern space are printed out to the output stream, adding back the trailing newline if it was removed(well, some little nasty thing happens here Cf. [[https://www.gnu.org/software/sed/manual/sed.html#fn-3][sed manual footnote]]). The pattern space starts from fresh before each cycle starts(except for special commands, like D). The hold space, on the other hand, keeps its data between cycles (Cf. [[https://www.gnu.org/software/sed/manual/sed.html#Execution-Cycle][How sed works: Execution Cycle]])
+    - When the input is a list of files, by default, /sed/ considers the files a single continuous long stream. GNU /sed/ extension has a option `-s` allows user to consider them as separate files, and line numbers are relative to the start of each file (the catch for `-s` is that range address cannot span several files).  For example, suppose sed-test-1.in and sed-test-2.in has two lines of "abcde". The first command below only replaces the first line in first input file sed-test-1.in while the second command replaces the first line in each input file as well as the input from /stdin/ 
+      #+BEGIN_SRC shell
+         echo "abcd"|sed -e "1 y/a/b/" sed-test-1.in sed-test-2.in -  
+         echo "abcd"|sed -s -e "1 y/a/b/" sed-test-1.in sed-test-2.in -  
+      #+END_SRC
+
+** Annotated Examples 
+***  Centering Lines with /sed/. 
+In GNU sed manual, this script(https://www.gnu.org/software/sed/manual/sed.html#Centering-lines) is used to demonstrate how to center each line with sed. But this script is *wrong* and *dangerous!*. If a line is longer than 80 characters, the line will be silently truncated.  
+     #+BEGIN_SRC shell
+	 #!/usr/bin/sed -f
+	 # Generate 80 spaces in the hold space
+     # Note that hold space keeps its data between cycles,but we only need to generate the spaces once. 
+     # The 1 is the address matches only the first line. 
+	 1 {
+     x   #swap pattern space with hold space; since s operates on pattern space only. 
+     s/^$/          /   #Replace empty line with 10 white spaces;  
+     s/^.*$/&&&&&&&&/   # ^.*$ matches the previous inserted 10 white spaces; The & means the whole match. So we have 80 white spaces;  
+     x   # swap pattern space with hold space. Now we have 80 spaces in the hold space. In the pattern space, we have the current line. 
+	 }
+
+     # del leading and trailing spaces
+     # The y command transliterate characters. 
+     # Note that the y command, different from s,  allows no comments on the same line  
+	 y/\t/ /
+	 s/^ *// # delete all leading spaces  
+	 s/ *$// # delete all trailing spaces
+
+     #The G command append a newline to the contents of the pattern space, 
+     #and then append the contents of the hold space to that of the pattern space. 
+	 G      
+
+	 # keep first 81 chars (80 + a newline)
+	 # Note that . in sed matches newline. This is different from elisp or python
+	 # CAUTION: This command is dangerous, if the line is longer than 80 characters, we will lose anything after the 80th characters!
+	 s/^\(.\{81\}\).*$/\1/
+
+	 # \2 matches half of the spaces, which are moved to the beginning
+	 # The expression \(.*\)\2 captures necessary amount of spaces to fill in front, and divide the spaces equally into two parts. 
+     # Grouping and subexpression matching allows us to do arithmetics. 
+	 s/^\(.*\)\n\(.*\)\2/\2\1/
+     #+END_SRC
+*** Replace leading spaces with tabs. 
+Sometimes we need to change indentation style, for example, replace every leading four spaces with one tab. The following one-liner will do the work. Note the use of label, conditional jump command t and grouping. The command t jumps to the label only  when the substitution succeeds. The command t and the label forms an implicit loop where each iteration replaces a four spaces with a tab. For the meanings of `{}` and `+`, refer to the `find` utility  [[http://shiyuangu.com/2014/08/13/linux-utility-programs/][here]] .
+     #+BEGIN_SRC 
+         find . -iname "*.ion" -exec sed -i ':l s/^\(\t*\) \{4\}/\1\t/; t l' {} +    
+     #+END_SRC
+     
+** Gotcha: 
+*** The s command and the g flags. 
+The command 's/Hello/HelloWorld/' only replace the first match of each line. To replace all matches, use the g flag, 's/Hello/HelloWorld/g'. 
+*** Word boundary
+Sometimes we think in terms of word and want the match for the whole word. In this case, use the world boundary "\b" 
+* Footnotes
+
+[fn:1] 

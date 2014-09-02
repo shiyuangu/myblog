@@ -1,17 +1,52 @@
+#+BLOG: wordpress
+#+POSTID: 50
+-----------------------
+#+TITLE: Prompt String and Color Setup
+#+DATE: <2014-08-10 Sun>
+#+CATEGORY: Scripting
+-----------------------
 In Bash, PS1 sets the prompt string. There are four kinds of prompt in bash PS1, PS2, PS3, PS4. "\" denotes escape character. In the follow example: 
-* \[ : begin a sequence of non-printing characters, which could be used to embed a terminal control sequence into the prompt 
-* \] : end a sequence of non-printing characters
-* The sequence in the format \033[n1;n2m is a [[http://en.wikipedia.org/wiki/ANSI_escape_code][ANSI Escape Code]] for colors. \033 is an CSI(Control Sequence Introducer)
-** \033[1;34m changes foreground color(30+i) to  bold(1) blue(i=4); \033[1;32m changes foreground color to bold(1) green(i=2); \033[0m resets all attributes
-** [\u] $USER enclosed by brackets; \w working directory.  
+
 #+BEGIN_SRC shell 
 #!/usr/bin/bash
 PS1="\[\033[1;34m\][\u]\[\033[1;32m\][\w]\[\033[0m\]> "
 #+END_SRC
 
-Zsh sets colors differently than Bash[fn:1].   [[ANSI Escape Code]] seems not recognized. Instead, set
++ \[ : begin a sequence of non-printing characters, which could be used to embed a terminal control sequence into the prompt 
++ \] : end a sequence of non-printing characters
++ The sequence in the format \033[n1;n2m is a [[http://en.wikipedia.org/wiki/ANSI_escape_code][ANSI Escape Code]] for colors. \033 is an CSI(Control Sequence Introducer)
+  - \033[1;34m changes foreground color(30+i) to  bold(1) blue(i=4); \033[1;32m changes foreground color to bold(1) green(i=2); \033[0m resets all attributes
+  - [\u] $USER enclosed by brackets; \w working directory.  
+
+Zsh sets colors differently than Bash[fn:1]. [[ANSI Escape Code]] seems not recognized. In Zsh, set the variable PROMPT instead(see the script bellow). I prefer to use GNU ls and utility dircolor to set colors. On Macports, GNU ls and dircolors are renamed to gls and gdircolor. The following is my current setup in zsh. The script use gls and gdircolor if they are installed. Otherwise, fall back to Mac OS native LSCOLORS. 
+#+BEGIN_SRC shell
+#setup colors
+autoload -U colors && colors
+
+#setup the prompt string with color
+PROMPT="%{$fg_bold[green]%}[%d]%{$reset_color%}>"
+
+#LS_COLORS and dircolors is part of GNU ls
+#(which is part of coreutils package); 
+#Macports rename them to gdircolors and gls, respectively.
+#There is a nice tool to generate ls colors 
+#for both BSD ls and GNU ls : http://geoff.greer.fm/lscolors/
+#For Mac LSCOLORS syntax, Cf. 
+#http://superuser.com/questions/324207/how-do-i-get-context-coloring-in-mac-os-x-terminal
+# Ref. http://unix.stackexchange.com/questions/2897/clicolor-and-ls-colors-in-bash
+#for GNU LS_COLORS: http://blog.twistedcode.org/2008/04/lscolors-explained.html
+if whence gdircolors>/dev/null && whence gls>/dev/null && test -e ~/.dir_colors; then
+	eval `gdircolors ~/.dir_colors`
+    alias ls='gls --color'
+	zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS} #for autocomplete; see `man zshcompsys
+else
+	export CLICOLOR=1
+    export LSCOLORS=exfxcxdxbxegedabagacad
+fi
+
+#+END_SRC
 
 * Footnotes
 
-[fn:1]  [[https://wiki.archlinux.org/index.php/zsh][Archive Linux Wiki]]
+[fn:1][[https://wiki.archlinux.org/index.php/zsh][Archive Linux Wiki]]
  

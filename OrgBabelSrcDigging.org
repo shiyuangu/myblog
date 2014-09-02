@@ -1,0 +1,364 @@
+#+BLOG: wordpress
+#+POSTID: 71
+-----------------------
+#+TITLE: Source Code Digging: Emacs-Org-Babel
+#+DATE: <2014-08-24 Sun>
+#+CATEGORY: Emacs
+-----------------------
+* org-babel-execution-src-block:
+
+When we call `C-c C-c` inside a source code block, the function `org-ctrl-c-ctrl-c` will be invoked. The function is content-aware and does different things depending on the context. If the cursor is inside a source code block, the org-babel-execution-src-block() will be invoked. The function org-babel-execution-src-block() extracts the src code and constructs necessary info for execution and then call another wrapper function(like org-babel-execute:python(...) ). This post is based on a debugger trace of the following toy python example. By digging this piece of elisp code, we can learn how to call processes from emacs and then retrieve the result. 
+#+BEGIN_SRC python :results output :session foo
+ ##+BEGIN_SRC python :results output :session foo
+ print "hello"
+ 23
+ print "bye"
+ ##+END_SRC
+#+END_SRC
+The backtrace is as follow
+
+#+BEGIN_SRC lisp
+ Debugger entered--beginning evaluation of function call form:
+  * (if info (copy-tree info) (org-babel-get-src-block-info))
+  * (let* ((org-babel-current-src-block-location ....)
+  * org-babel-execute-src-block(nil)
+  (progn (org-babel-eval-wipe-error-buffer) (org-babel-execute-src-block current-prefix-arg) t)
+  (if (or (org-babel-where-is-src-block-head) (org-babel-get-inline-src-block-matches)) (progn (org-babel-eval-wipe-error-buffer) (org-babel-execute-src-block current-prefix-arg) t) nil)
+  org-babel-execute-src-block-maybe()
+  (or (org-babel-execute-src-block-maybe) (org-babel-lob-execute-maybe))
+  org-babel-execute-maybe()
+  (if org-babel-no-eval-on-ctrl-c-ctrl-c nil (org-babel-execute-maybe))
+  org-babel-execute-safely-maybe()
+  run-hook-with-args-until-success(org-babel-execute-safely-maybe)
+  (cond ....)
+  org-ctrl-c-ctrl-c(nil)
+  call-interactively(org-ctrl-c-ctrl-c nil nil)
+#+END_SRC
+
+One essential piece of org-babel-execution-src-block is the following function which extracts src code and constructs the info from context. Note that org-babel-execute-src-block is initially passed in the argument nil when it's called by org-ctrl-c-ctrl-c. After org-babel-get-src-block-info is called, org-babel-execute-src-block has necessary info for src code execution. 
+
+#+BEGIN_SRC lisp
+(if info (copy-tree info) (org-babel-get-src-block-info))
+#+END_SRC
+
+After this expression, info becomes something like this:
+#+BEGIN_SRC lisp
+("python" "print \"hello\"
+21
+print \"bye\"" ((:colname-names) (:rowname-names) (:result-params "output" "replace") (:result-type . output) (:comments . "") (:shebang . "") (:cache . "no") (:padline . "") (:noweb . "no") (:tangle . "no") (:exports . "code") (:results . "output replace") (:session . "foo") (:hlines . "no")) "" nil 0 #<marker at 1 in test-org-python-fix.org>)
+#+END_SRC
+
+In particular, the header argument :result-params hold info about how the program would execute. This info is extracted and eventually used as follows: 
+#+BEGIN_SRC lisp
+(if (member "none" result-params)
+          (progn
+			(funcall cmd body params)
+			(message "result silenced")
+			(setq result nil))
+          (setq result
+			  (let ((result (funcall cmd body params)))
+                            (if (and (eq (cdr (assoc :result-type params))
+                                         'value)
+                                     (or (member "vector" result-params)
+                                         (member "table" result-params))
+                                     (not (listp result)))
+                                (list (list result)) result)))
+          ;;;post processing: write to files; handle special types of result like vector, table, ect. 
+#+END_SRC
+
+In the snippet above, the variable cmd holds the function to call, which is usually a wrapper,  something like "org-babel-execute:python". The variable body hold the src code block in string, which is something like:  
+#+BEGIN_SRC python 
+"print \"hello\" 
+23
+print \"bye\""
+#+END_SRC
+
+The variable params hold necessary info for the wrapper to process, which looks like 
+#+BEGIN_SRC lisp
+((:comments . "")
+ (:shebang . "")
+ (:cache . "no")
+ (:padline . "")
+ (:noweb . "no")
+ (:tangle . "no")
+ (:exports . "code")
+ (:results . "replace output")
+ (:hlines . "no")
+ (:session . "foo")
+ (:result-type . output)
+ (:result-params "output" "replace")
+ (:rowname-names)
+ (:colname-names))
+
+#+END_SRC
+
+The logic for result of evaluation(Cf. http://orgmode.org/manual/Results-of-evaluation.html#Results-of-evaluation) is handled in the wrapper org-babel-execute:python (body params), body is the source code and params is as shown above. 
+
+#+BEGIN_SRC lisp
+(defun org-babel-execute:python (body params)
+  "Execute a block of Python code with Babel.
+This function is called by `org-babel-execute-src-block'."
+  (let* ((session (org-babel-python-initiate-session
+		   (cdr (assoc :session params))))
+         (result-params (cdr (assoc :result-params params)))
+         (result-type (cdr (assoc :result-type params)))
+	 (return-val (when (and (eq result-type 'value) (not session))
+		       (cdr (assoc :return params))))
+	 (preamble (cdr (assoc :preamble params)))
+	 (org-babel-python-command
+	  (or (cdr (assoc :python params)) org-babel-python-command))
+      (full-body
+	  (org-babel-expand-body:generic
+	   (concat body (if return-val (format "\nreturn %s" return-val) ""))
+	   params (org-babel-variable-assignments:python params)))
+      (result (org-babel-python-evaluate
+		  session full-body result-type result-params preamble)))
+(org-babel-reassemble-table
+     result
+     (org-babel-pick-name (cdr (assoc :colname-names params))
+			  (cdr (assoc :colnames params)))
+     (org-babel-pick-name (cdr (assoc :rowname-names params))
+			  (cdr (assoc :rownames params))))))
+#+END_SRC
+
+A few point noteworthy: 
++ the org-babel-python-command (usually set in .emacs, something like "ipython --no-banner --classic --no-confirm-exit") can be overridden by the header argument :python. Also, the org-babel-python-command is both used for session or non-session. 
+   #+BEGIN_SRC lisp
+    (org-babel-python-command
+	  (or (cdr (assoc :python params)) org-babel-python-command))
+
+   #+END_SRC
++ The scr code is expanded before evaluation. The is the key to allow different language to communicate (TODO: a separate blog post for explanation how this is done) 
+   #+BEGIN_SRC lisp
+   (full-body
+	  (org-babel-expand-body:generic
+	   (concat body (if return-val (format "\nreturn %s" return-val) ""))
+	   params (org-babel-variable-assignments:python params)))
+   #+END_SRC
+
+The src code body is next passed to the function org-babel-python-evaluate. Now we see that the concept of 'session/non-session' as in org-babel manual http://orgmode.org/manual/Results-of-evaluation.html#Results-of-evaluation actually means the code whether is passed to external process or an interpreter running as an interactive Emacs inferior process(the variable "session" in the src code actually is a string of the buffer name, like "* foo *").
+
+#+BEGIN_SRC lisp
+(defun org-babel-python-evaluate
+  (session body &optional result-type result-params preamble)
+  "Evaluate BODY as Python code."
+  (if session
+      (org-babel-python-evaluate-session
+       session body result-type result-params)
+    (org-babel-python-evaluate-external-process
+     body result-type result-params preamble)))
+#+END_SRC
+
+Let's look at what happen for non-session case. Babel would evaluate the src code body in the buffer with name session using comint.
+
+#+BEGIN_SRC lisp
+(defun org-babel-python-evaluate-session
+    (session body &optional result-type result-params)
+  "Pass BODY to the Python process in SESSION.
+If RESULT-TYPE equals 'output then return standard output as a
+string.  If RESULT-TYPE equals 'value then return the value of the
+last statement in BODY, as elisp."
+  (let* ((send-wait (lambda () (comint-send-input nil t) (sleep-for 0 5)))
+	 (dump-last-value
+	  (lambda
+	    (tmp-file pp)
+	    (mapc
+	     (lambda (statement) (insert statement) (funcall send-wait))
+	     (if pp
+		 (list
+		  "import pprint"
+		  (format "open('%s', 'w').write(pprint.pformat(_))"
+			  (org-babel-process-file-name tmp-file 'noquote)))
+	       (list (format "open('%s', 'w').write(str(_))"
+			     (org-babel-process-file-name tmp-file
+                                                          'noquote)))))))
+	 (input-body (lambda (body)
+		       (mapc (lambda (line) (insert line) (funcall send-wait))
+			     (split-string body "[\r\n]"))
+		       (funcall send-wait)))
+         (results
+          (case result-type
+            (output
+             (mapconcat
+              #'org-babel-trim
+              (butlast
+               (org-babel-comint-with-output
+                   (session org-babel-python-eoe-indicator t body)
+                 (funcall input-body body)
+                 (funcall send-wait) (funcall send-wait)
+                 (insert org-babel-python-eoe-indicator)
+                 (funcall send-wait))
+               2) "\n"))
+            (value
+             (let ((tmp-file (org-babel-temp-file "python-")))
+               (org-babel-comint-with-output
+                   (session org-babel-python-eoe-indicator nil body)
+                 (let ((comint-process-echoes nil))
+                   (funcall input-body body)
+                   (funcall dump-last-value tmp-file
+                            (member "pp" result-params))
+                   (funcall send-wait) (funcall send-wait)
+                   (insert org-babel-python-eoe-indicator)
+                   (funcall send-wait)))
+               (org-babel-eval-read-file tmp-file))))))
+    (unless (string= (substring org-babel-python-eoe-indicator 1 -1) results)
+      (org-babel-result-cond result-params
+	results
+        (org-babel-python-table-or-string results)))))
+
+#+END_SRC
+
+The function above takes the src code body, splits it into lines and then inserts them to the interpreter buffer. This imitates human entering the src code in the buffer. 
+#+BEGIN_SRC lisp
+(input-body (lambda (body)
+		       (mapc (lambda (line) (insert line) (funcall send-wait))
+			     (split-string body "[\r\n]"))
+		       (funcall send-wait)))
+#+END_SRC 
+
+ In case that :result is 'value, the return result is based on the processing of the interpreter buffer(remove echo, ect). In case that :result is 'output, only the result of last executed statement in the interpreter session is retrieved. All screen output is ignored.The underscore _ in python holds the result of last executed statement in an interactive interpreter session. We can also do pprint.  
+
+#+BEGIN_SRC lisp
+;;; The underscore _ in python hold the result of last executed statement in an interative interpreter session. 
+(dump-last-value
+	  (lambda
+	    (tmp-file pp)
+	    (mapc
+	     (lambda (statement) (insert statement) (funcall send-wait))
+	     (if pp
+		 (list
+		  "import pprint"
+		  (format "open('%s', 'w').write(pprint.pformat(_))"
+			  (org-babel-process-file-name tmp-file 'noquote)))
+	       (list (format "open('%s', 'w').write(str(_))"
+			     (org-babel-process-file-name tmp-file
+                                                          'noquote)))))))
+#+END_SRC
+
+For non-session evaluation (that is, :session none),  org-babel-eval will be invoke, and then  org-babel-eval, org-babel--shell-command-on-region. The real work is done by the lisp function process-file. 
+#+BEGIN_SRC lisp
+(defun org-babel-python-evaluate-external-process
+  (body &optional result-type result-params preamble)
+  "Evaluate BODY in external python process.
+If RESULT-TYPE equals 'output then return standard output as a
+string.  If RESULT-TYPE equals 'value then return the value of the
+last statement in BODY, as elisp."
+  (let ((raw
+         (case result-type
+           (output (org-babel-eval org-babel-python-command
+                                   (concat (if preamble (concat preamble "\n"))
+                                           body)))
+           (value (let ((tmp-file (org-babel-temp-file "python-")))
+                    (org-babel-eval
+                     org-babel-python-command
+                     (concat
+                      (if preamble (concat preamble "\n") "")
+                      (format
+                       (if (member "pp" result-params)
+                           org-babel-python-pp-wrapper-method
+                         org-babel-python-wrapper-method)
+                       (mapconcat
+                        (lambda (line) (format "\t%s" line))
+                        (split-string
+                         (org-remove-indentation
+                          (org-babel-trim body))
+                         "[\r\n]") "\n")
+                       (org-babel-process-file-name tmp-file 'noquote))))
+                    (org-babel-eval-read-file tmp-file))))))
+    (org-babel-result-cond result-params
+      raw
+      (org-babel-python-table-or-string (org-babel-trim raw)))))
+
+(defun org-babel-eval (cmd body)
+  "Run CMD on BODY.
+If CMD succeeds then return its results, otherwise display
+STDERR with `org-babel-eval-error-notify'."
+  (let ((err-buff (get-buffer-create " *Org-Babel Error*")) exit-code)
+    (with-current-buffer err-buff (erase-buffer))
+    (with-temp-buffer
+      (insert body)
+      (setq exit-code
+	    (org-babel--shell-command-on-region
+	     (point-min) (point-max) cmd err-buff))
+      (if (or (not (numberp exit-code)) (> exit-code 0))
+	  (progn
+	    (with-current-buffer err-buff
+	      (org-babel-eval-error-notify exit-code (buffer-string)))
+	    nil)
+	(buffer-string)))))
+
+(defun org-babel--shell-command-on-region (start end command error-buffer)
+  "Execute COMMAND in an inferior shell with region as input.
+
+Stripped down version of shell-command-on-region for internal use
+in Babel only.  This lets us work around errors in the original
+function in various versions of Emacs.
+"
+  (let ((input-file (org-babel-temp-file "ob-input-"))
+	(error-file (if error-buffer (org-babel-temp-file "ob-error-") nil))
+	;; Unfortunately, `executable-find' does not support file name
+	;; handlers.  Therefore, we could use it in the local case
+	;; only.
+	(shell-file-name
+	 (cond ((and (not (file-remote-p default-directory))
+		     (executable-find shell-file-name))
+		shell-file-name)
+	       ((file-executable-p
+		 (concat (file-remote-p default-directory) shell-file-name))
+		shell-file-name)
+	       ("/bin/sh")))
+	exit-status)
+    ;; There is an error in `process-file' when `error-file' exists.
+    ;; This is fixed in Emacs trunk as of 2012-12-21; let's use this
+    ;; workaround for now.
+    (unless (file-remote-p default-directory)
+      (delete-file error-file))
+    ;; we always call this with 'replace, remove conditional
+    ;; Replace specified region with output from command.
+    (let ((swap (< start end)))
+      (goto-char start)
+      (push-mark (point) 'nomsg)
+      (write-region start end input-file)
+      (delete-region start end)
+      (setq exit-status
+	    (process-file shell-file-name input-file
+			  (if error-file
+			      (list t error-file)
+			    t)
+			  nil shell-command-switch command))
+      (when swap (exchange-point-and-mark)))
+
+    (when (and input-file (file-exists-p input-file)
+	       ;; bind org-babel--debug-input around the call to keep
+	       ;; the temporary input files available for inspection
+	       (not (when (boundp 'org-babel--debug-input)
+		      org-babel--debug-input)))
+      (delete-file input-file))
+
+    (when (and error-file (file-exists-p error-file))
+      (if (< 0 (nth 7 (file-attributes error-file)))
+	  (with-current-buffer (get-buffer-create error-buffer)
+	    (let ((pos-from-end (- (point-max) (point))))
+	      (or (bobp)
+		  (insert "\f\n"))
+	      ;; Do no formatting while reading error file,
+	      ;; because that can run a shell command, and we
+	      ;; don't want that to cause an infinite recursion.
+	      (format-insert-file error-file nil)
+	      ;; Put point after the inserted errors.
+	      (goto-char (- (point-max) pos-from-end)))
+	    (current-buffer)))
+      (delete-file error-file))
+    exit-status))
+#+END_SRC
+
+The function org-babel--shell-command-on-region constructs arguments to call process-file, which looks like the following in case of python, 
+#+BEGIN_SRC lisp
+  process-file("/bin/bash" 
+               "/var/folders/8b/fw04kzxx5wd83bvpd3j2chds1dvh0k/T/babel-17601AAS/ob-input-176011aW" 
+                (t "/var/folders/8b/fw04kzxx5wd83bvpd3j2chds1dvh0k
+                 /T/babel-17601AAS/ob-error-17601Clc") 
+                nil "-c" "ipython --no-banner --classic --no-confirm-exit")
+#+END_SRC
+
+The first argument is  the shell-file-name, the second argument is the temp file holds the python src code, the third argument says separating the standard output stream from standard error stream, and the error goes to an temp file. The fourth argument nil means don't redisplay the buffer as output is inserted (output seems still inserted in the buffer eventually). The rest of arguments are passed to "/bin/bash" verbatim, "/bin/bash -c ipython" means to use ipython to execute the input file (see `man bash` for the usage of option -c, see `ipython --help` for the ipython options).   

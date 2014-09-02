@@ -3,4 +3,4 @@
 #+DATE: [2014-07-18 Fri 10:09]
 #+TITLE: Hello, Sleepless in Seattle. 
 #+CATEGORY: English
--- Hello, Victoria. This is Sam Boldwin. I don't if you remember mem but ...  I was wondering if you would like to have a drink with me. Dinner?.. Dinner would be even better.... Friday would be great.. I hear that's a good place.  ... 7:3-0 would be fine... So it's Friday at 7:30 for dinner. I will meet you there. 
+M: Hello, Victoria. This is Sam Boldwin. I don't if you remember mem but ...  I *was wondering* if you would like to have a drink with me. Dinner?.. Dinner would be even better.... Friday *would* be great. I hear that's a good place.  ... 7:3-0 *would* be fine... So it's Friday at 7:30 for dinner. I will meet you there. 

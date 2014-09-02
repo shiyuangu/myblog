@@ -1,0 +1,27 @@
+-----------------------
+#+TITLE: Debug Elisp Code
+#+DATE: <2014-08-23 Sat>
+#+CATEGORY: Emacs
+-----------------------
+[[http://www.gnu.org/software/emacs/manual/html_node/elisp/Debugger-Commands.html#Debugger-Commands][This link]] is the commands for the built-in debugger in Emacs.  The terminology in Emacs debugger is different from those of GDB. This post is a summary. We can start debugging a Elisp function with `M-x debug-on-entry`. A typical trace stack in the built-in debugger looks like: 
+#+BEGIN_VERSE
+Debugger entered--beginning evaluation of function call form:
+* (if info (copy-tree info) (org-babel-get-src-block-info))
+* (let* ((org-babel-current-src-block-location ....)
+* org-babel-execute-src-block(nil)
+  (progn (org-babel-eval-wipe-error-buffer) (org-babel-execute-src-block current-prefix-arg) t)
+  (if (or (org-babel-where-is-src-block-head) (org-babel-get-inline-src-block-matches)) (progn (org-babel-eval-wipe-error-buffer) (org-babel-execute-src-block current-prefix-arg) t) nil)
+  org-babel-execute-src-block-maybe()
+  (or (org-babel-execute-src-block-maybe) (org-babel-lob-execute-maybe))
+  org-babel-execute-maybe()
+  (if org-babel-no-eval-on-ctrl-c-ctrl-c nil (org-babel-execute-maybe))
+  org-babel-execute-safely-maybe()
+  run-hook-with-args-until-success(org-babel-execute-safely-maybe)
+  (cond ....)
+  org-ctrl-c-ctrl-c(nil)
+  call-interactively(org-ctrl-c-ctrl-c nil nil)
+#+END_VERSE
++ The star "*" is the location where the debugger would stop(or "enter") and display the return value of the expression; the "d" command continue the execution until next lisp function. The lisp function then would be put on top of the debugger; the "u" command removes the star which means that the debugger would not stop(or "enter") and shows the return value when the frame exits; The "c" command continue execution until the next flagged frame returns. In GDB terminology, "d" set a break point at next lisp function, "u" unset the break point, "c" continues. 
+
+*Gotcha
++ Debugger might show different src code then what we see in the src file due to the macros, for example, "when" in src file becomes "if" in debugger. 

@@ -1,4 +1,11 @@
-* Regular Expression: Emacs vs Python 
+#+BLOG: wordpress
+#+POSTID: 64
+-----------------------
+#+TITLE: Regular Expression: Syntax Comparison 
+#+DATE: <2014-08-14 Thu>
+#+CATEGORY: Emacs Scripting
+-----------------------
+* Regular Expression:
 
 + Need to double the backslash in both Emacs and python ("backslash plague"). In python, we can also use raw string to avoid doubling backslashes.  
 + The greedy/non-greedy version between Emacs and Python are similar. 

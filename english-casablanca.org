@@ -3,21 +3,19 @@
 #+DATE: [2014-07-17 Thu 23:21]
 #+CATEGORY: English
 -----------------------
-#+TITLE: Hello, English!
+#+TITLE: Casablanca
 -----------------------
-* English: 
-+ stellar: Magit does a stellar job overlaying a nice UI on top of the reflog mechanism. 
-+ woe: misfortune;The feature only exists in a remote branch which is woefully out of date. 
-+ Casablanca:
-  - Here's looking at you kid. 
-  - I wish I didn't love you so much. 
-  - Roundup the usual suspects.
-  - I think this is a beginning of a beautiful friendship. 
-  - Inside we both know that you belong to Victor. You're part of his work and the thing keeps him going. 
-  - When the plane leaves the ground and you are not with him, you will regret it. Maybe not today, maybe not  tomorrow, but soon, for the rest of your life.
-  - What about us? 
-  - We'll always have Paris. We didn't have it. We'd lost it until you came to Casablanca. We got it back last night. 
-  - WHen I said I would never leave you. 
-  - And you never will. 
-  - I have a job to do too. Where I am going, you cannot follow. What I got to do, you cannot be any part of. IIls, I am not going be noble. But It doesn't much to see the problems of three little people don't amount to a hill of beans in this crazy world.  Someday you will understand that. 
-  - Here's looking at you.  
+#+BEGIN_VERSE
+Rick: *Here's looking at you kid*. 
+Llsa: : I wish I didn't love you so much. 
+Rick: Inside we both know that you belong to Victor. You're part of his work and *the thing keeps him going*.  When the plane leaves the ground and you are not with him, you will regret it. Maybe not today, maybe not  tomorrow, but soon, for the rest of your life.
+Llsa: What about us? 
+Rick: We'll always have Paris. We didn't have it. We'd lost it until you came to Casablanca. We got it back last night. 
+Llsa: When I said I would never leave you. 
+Rick: And you never will.  I have a job to do too. Where I am going, you cannot follow. What I got to do, you cannot be any part of. IIls, I am not going be noble. But It doesn't take much to see the problems of three little people don't *amount to a hill of beans* in this crazy world.  Someday you will understand that. 
+Rick: "Here's looking at you kid* 
+
+M: Roundup the usual suspects.
+Rick: I think this is a beginning of a beautiful friendship. 
+#+END_VERSE
+
