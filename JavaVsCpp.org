@@ -1,0 +1,48 @@
+#+BLOG: wordpress
+#+POSTID: 85
+-----------------------
+#+TITLE: Java vs. C++
+#+DATE: <2014-09-01 Mon>
+#+CATEGORY: Programming
+-----------------------
+* Exception: 
++ In Java, only subclass derived from Throwable can be thrown; in C++, any object can be thrown. 
++ Java has two type of exceptions: checked and unchecked; all exceptions in c++ are unchecked. C++ does have exception specification. But it's not part of function signature and it's not checked in complied time. At runtime, if the exception specification is not obeyed, std::unexpected is called (Cf. [[http://en.cppreference.com/w/cpp/language/except_spec][cppreference.com Exception Specification]]).
+
+* Enum 
++ C++'s enum is just integer internally(roughly speaking) and can be mixed with integer, and hence not type safe. C++ 11 provides a type-safe enum class (cf. [[http://en.wikipedia.org/wiki/Enumerated_type#C.2B.2B][wiki-enum-c++]])
+#+BEGIN_SRC cpp
+enum color { red, yellow, green=20, blue };
+color col = red;
+int n = blue; // n == 21
+#+END_SRC
++ Java's Enum is actually a special compiler-generated class rather than an arithmetic type (cf. [[http://en.wikipedia.org/wiki/Enumerated_type][Wiki-Enumerated_Type]]).  A classical usage is to use Enum for factory. For example, the follow LineSearchEnum is a factory class for creating various line search methods 
+#+BEGIN_SRC java
+  public enum LineSearchEnum {
+    SIMPLE {
+       @Override 
+       public LineSearch newInstance() {
+           return new SimpleLineSearch();
+       }
+    }, 
+    ARMIJO {
+      @Override
+      public LineSearch newInstance() {
+          return new ArmijoLineSearch();
+      }
+    }, 
+    CUBIC {
+      @Override
+      public LineSearch newInstance() {
+          return new CubicLineSearch();
+      }
+    },
+    Wolfe {
+        @Override
+        public LineSearch newInstance() {
+            return new WolfeLineSearch();
+        }
+    };
+    public abstract LineSearch newInstance();
+}
+#+END_SRC
