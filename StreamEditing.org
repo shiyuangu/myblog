@@ -5,7 +5,7 @@
 #+DATE: <2014-08-13 Wed>
 #+CATEGORY: Scripting
 -----------------------
-* /sed/
+* /sed/ 
 ** Features 
  + Make only one pass over the inputs and hence more efficient. 
  + Ability to filter text in a pipeline
@@ -71,6 +71,11 @@ Sometimes we need to change indentation style, for example, replace every leadin
 The command 's/Hello/HelloWorld/' only replace the first match of each line. To replace all matches, use the g flag, 's/Hello/HelloWorld/g'. 
 *** Word boundary
 Sometimes we think in terms of word and want the match for the whole word. In this case, use the world boundary "\b" 
+* /cut/
+ + Delete the third field with a common as field separator 
+  #+BEGIN_SRC shell
+  cut --complement -d, -f3 adult.data > income_train_data.csv
+  #+END_SRC
 * Footnotes
 
 [fn:1] 

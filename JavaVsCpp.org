@@ -46,3 +46,45 @@ int n = blue; // n == 21
     public abstract LineSearch newInstance();
 }
 #+END_SRC
+* Private inheritance 
+Java doesn't support private inheritance but C++ does. Private inheritance is one way to implement the  logical relation of /"is-implemented-in-terms-of"/, for example, we can implement a set using stl::list.  The book /Effective C++/ also gives a nice example: The widget needs some functions which are already implemented in a call Timer. However, it is inappropriate for client to call Timer::onTick(). Clients of Widget should not be able to invoke anything in Timer. Widget is not a timer and the client should not be able to invoke anything in Timer directly. Public inheritance is not appropriate in this case. Private inheritance provides one possible solution. The book  /Effective C++/ provides an alternative approach of using private class and composition. This approach has two benefits: (1) The subclass of  Widget has no way to override the virtual function Timer::onTick()(note that in the first approach of private inheritance, the subclass cannot call onTick(), but can override Timer::onTick(); (2) Minimize compilation dependency if we use a pointer to WidgetTimer. 
+#+BEGIN_SRC c++
+  class Timer{
+    pubic:
+    explicit Timer(int tickFrequency);
+    virtual void onTick()const;
+     
+  };
+  class Widget:private Timer(){
+   private:
+    virtual void onTick() const; 
+  };
+  /*Alternative Approach*/
+  class Widget{
+    private: 
+	   class WidgetTimer:public Timer{
+         public: 
+            virtual void onTick()const; 
+       };
+    WidgetTimer timer; //or use pointer WidgetTimer* timer to minimize compilation dependency; 
+  };
+#+END_SRC
+
+* "Final" class and override 
+ Java provides has a concept of *final* class which cannot be subclassed. Java also has an annotation of *@Override* to allow compilation to detect whether a method actually overrides anything. The keywords *final* and *override* are only introduced to C++ in C++11. They are called contextual keywords which means whether override is a keyword or not depends on the context(for example, it's valid to name a variable to be override). Also, *override* is a suffix instead of prefix. The following example is from [[http://en.cppreference.com/w/cpp/language/override][cppreference.com]]
+#+BEGIN_SRC c++
+struct A
+{
+    virtual void foo();
+    void bar();
+};
+ 
+struct B : A
+{
+    void foo() const override; // Error: B::foo does not override A::foo
+                               // (signature mismatch)
+    void foo() override; // OK: B::foo overrides A::foo
+    void bar() override; // Error: B::bar is not virtual
+};
+
+#+END_SRC   

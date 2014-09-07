@@ -1,7 +1,7 @@
 #+BLOG: wordpress
 #+POSTID: 71
 -----------------------
-#+TITLE: Source Code Digging: Emacs-Org-Babel
+#+TITLE: Source Code Digging: Emacs-Org-Babel(1): 
 #+DATE: <2014-08-24 Sun>
 #+CATEGORY: Emacs
 -----------------------
@@ -15,7 +15,7 @@ When we call `C-c C-c` inside a source code block, the function `org-ctrl-c-ctrl
  print "bye"
  ##+END_SRC
 #+END_SRC
-The backtrace is as follow
+The backtrace is as follows
 
 #+BEGIN_SRC lisp
  Debugger entered--beginning evaluation of function call form:

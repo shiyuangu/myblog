@@ -7,7 +7,7 @@
 -----------------------
 This article means to summary some commonly utility programs I uses on a daily basis. The utility programs in this post often have different variants(BSD, GNU, POSIX, ect [fn:1]). 
 * Piping
-+ Piping with stdin redirection. Without the stdin redirection, emacs complains the stdin is not tty. 
++ Piping with stdin redirection. Without the stdin redirection, emacs complains the stdin is not tty. The "$@" is a [[http://unixhelp.ed.ac.uk/scrpt/scrpt2.2.2.html][Special Shell Variables]] which is a string containing all arguments to the shell 
   #+BEGIN_SRC shell
   ls prod_JP*|xargs zsh -c 'emacs "$@"</dev/tty'
   #+END_SRC
