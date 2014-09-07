@@ -116,6 +116,8 @@ Cf. [[http://en.wikipedia.org/wiki/Final_(Java)][wiki-final variables in Java]].
   #+END_SRC
 * Abstract Class vs. Interface
   Both Java and C++ have the concept of abstract class. But the concept is not quite the same. Abstract class cannot be instantiated. In c++, abstract class are the classes with pure virtual functions. C++ allows multiple inheritance and virtual inheritance. Java distinguishes /abstract class/. A class can extend at most one abstract class but implement many interface. An interface cannot have data member and all methods are public. 
+* Method Overriding
++ In java, all instance methods are virtual by default which is not the case in c++. C++, methods can be hiding or overriding. This turns out to be a source of errors. C++ introduces a new contextual keyword *override* to help.  
 * Abstract methods(Java) vs. pure virtual functions(c++)
   Atn abstract method in Java can only be public or protected, but not private. In c++, it's perfectly valid to define a private virtual function. This c++ rule seems odd at first but perfectly sensible(for example, to implement Templated Method Pattern, Cf. /Effective c++/ Item 35.  The following example compiles and runs. Note that we can even change the access control in the subclass for pure virtual function.
 	#+BEGIN_SRC c++
@@ -143,8 +145,9 @@ Cf. [[http://en.wikipedia.org/wiki/Final_(Java)][wiki-final variables in Java]].
 
 
 	#+END_SRC
-* "Protected" access control
-   Both C++ and Java have "protected" access control([[http://en.cppreference.com/w/cpp/language/access][cpp access control ]], [[http://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html][java access control]], [[http://stackoverflow.com/questions/902922/why-does-the-protected-modifier-in-java-allow-access-to-other-classes-in-same][why does the protected modifier in Java allow access to other classes in the same package]]), but their meaning are not the same. In C++, /protected/ members can be accessed only by the class's friends and its subclasses. In Java, /protected/ members can be access also by anyclass within the package and a subclass of its class in another package. For example, the following is a valid java. In c++, subclasses change the access control when overriding. In java, subclass can also change the access control when overriding but with restriction([[http://www.tutorialspoint.com/java/java_access_modifiers.htm][AccessControl and Inheritance]])
+* Access control
+ + Java provides fourth level of access control, no modifier(package-private), public, private and protected while c++ has only three levels: public, private and protected. C++ has a concept of "friend" class. A class  can access its friend's private members.   
+ +  Both C++ and Java have "protected" access control([[http://en.cppreference.com/w/cpp/language/access][cpp access control ]], [[http://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html][java access control]], [[http://stackoverflow.com/questions/902922/why-does-the-protected-modifier-in-java-allow-access-to-other-classes-in-same][why does the protected modifier in Java allow access to other classes in the same package]]), but their meaning are not the same. In C++, /protected/ members can be accessed only by the class's friends and its subclasses. In Java, /protected/ members can be access also by anyclass within the package and a subclass of its class in another package. For example, the following is a valid java. In c++, subclasses change the access control when overriding. In java, subclass can also change the access control when overriding but with restriction([[http://www.tutorialspoint.com/java/java_access_modifiers.htm][AccessControl and Inheritance]])
    #+BEGIN_SRC java 
       /*
   Base.java -- 
@@ -175,4 +178,33 @@ public class Derived extends Base {
 }
 
    #+END_SRC 
+
+* Constructors 
++ default constructor, 
+  In C++, there is always a default constructor(i.e., the constructor takes no argument). In Java, this is not true. One consequence is that if there is no default constructor, and a subclass's constructor doesn't call super(..), there will be an compilation error. super(...) must be the first statement in subclass's constructors. 
++ Copy Constructor
+c++ provides copy constructors if we don't provide one while java doesn't. The following java code doesn't compile.
+#+BEGIN_SRC java
+// filename: Main.java
  
+class Complex {
+ 
+    private double re, im;
+ 
+    public Complex(double re, double im) {
+        this.re = re;
+        this.im = im;
+    }
+}
+ 
+public class Main {
+     
+    public static void main(String[] args) {
+        Complex c1 = new Complex(10, 15);  
+        Complex c2 = new Complex(c1);  // compiler error here
+    }
+}
+#+END_SRC
+
+* Destructors(C++) vs. Finalizer(Java)
++ In c++ destructors are automatically call in the reverse order of construction. In java, finalizer() are not automatically chained, subclass needs to call super.final() explicitly. 
