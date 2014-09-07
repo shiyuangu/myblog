@@ -143,3 +143,36 @@ Cf. [[http://en.wikipedia.org/wiki/Final_(Java)][wiki-final variables in Java]].
 
 
 	#+END_SRC
+* "Protected" access control
+   Both C++ and Java have "protected" access control([[http://en.cppreference.com/w/cpp/language/access][cpp access control ]], [[http://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html][java access control]], [[http://stackoverflow.com/questions/902922/why-does-the-protected-modifier-in-java-allow-access-to-other-classes-in-same][why does the protected modifier in Java allow access to other classes in the same package]]), but their meaning are not the same. In C++, /protected/ members can be accessed only by the class's friends and its subclasses. In Java, /protected/ members can be access also by anyclass within the package and a subclass of its class in another package. For example, the following is a valid java. In c++, subclasses change the access control when overriding. In java, subclass can also change the access control when overriding but with restriction([[http://www.tutorialspoint.com/java/java_access_modifiers.htm][AccessControl and Inheritance]])
+   #+BEGIN_SRC java 
+      /*
+  Base.java -- 
+   */
+package mine;
+public abstract class Base {
+	public abstract void draw();
+}
+/*
+  HelloWorld.java -- 
+   */
+package mine;
+public class HelloWorld {
+	public static void main(String[] args){
+		Derived d=new Derived();
+		d.draw();
+	}
+}
+/*
+  Derived.java -- 
+   */
+package mine; 
+public class Derived extends Base {
+	@Override
+	protected void draw(){
+		System.out.println("In Derived::draw()-3");
+	}
+}
+
+   #+END_SRC 
+ 
