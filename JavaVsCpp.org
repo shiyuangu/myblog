@@ -71,7 +71,7 @@ Java doesn't support private inheritance but C++ does. Private inheritance is on
 #+END_SRC
 
 * "Final" class and override 
- Java provides has a concept of *final* class which cannot be subclassed. Java also has an annotation of *@Override* to allow compilation to detect whether a method actually overrides anything. The keywords *final* and *override* are only introduced to C++ in C++11. They are called contextual keywords which means whether override is a keyword or not depends on the context(for example, it's valid to name a variable to be override). Also, *override* is a suffix instead of prefix. The following example is from [[http://en.cppreference.com/w/cpp/language/override][cppreference.com]]
+ Java provides has a concept of *final* class which cannot be subclassed.  There are also *final* methods and *final* variables.  *final* methods cannot be overridden or hidden by subclasses.  Java also has an annotation of *@Override* to allow compilation to detect whether a method actually overrides anything. The keywords *final* and *override* are only introduced to C++ in C++11. They are called contextual keywords which means whether override is a keyword or not depends on the context(for example, it's valid to name a variable to be override). Also, *override* is a suffix instead of prefix. The following example is from [[http://en.cppreference.com/w/cpp/language/override][cppreference.com]]
 #+BEGIN_SRC c++
 struct A
 {
@@ -86,5 +86,60 @@ struct B : A
     void foo() override; // OK: B::foo overrides A::foo
     void bar() override; // Error: B::bar is not virtual
 };
+* "final" variables(Java) vs. const(C++)
+Cf. [[http://en.wikipedia.org/wiki/Final_(Java)][wiki-final variables in Java]]. Summary 
 
-#+END_SRC   
++  Unlike the value of a constant, the value of a final variable is not necessarily known at compile time. Java's final variables must be set in initializers or constructors.
++ Java's final variables does not guarantee immutability. 
+
+  #+BEGIN_SRC java 
+      public final Position pos;
+  #+END_SRC
+   The pos cannot change but its members can unless it's members are final too. 
+  #+BEGIN_SRC c++
+       const Position & pos. 
+  #+END_SRC 
+
+* Initializers
+  + Java allows initializer one-liner or blocks. Initializers are executed whenever an instance of a class is created, regardless of which constructor is used to create the instance. The following is an example [[http://www.dummies.com/how-to/content/what-is-an-initializer-in-java.html][Java Initializer]]
+  #+BEGIN_SRC java
+      class PrimeClass
+      {
+          private Scanner sc = new Scanner(System.in);
+          public int x;
+          {
+              System.out.print("Enter the starting value for x: ");
+              x = sc.nextInt();
+          }
+    }
+    + C++ use /initialization list/ which is part of the constructors.   
+  #+END_SRC
+* Abstract Class vs. Interface
+  Both Java and C++ have the concept of abstract class. But the concept is not quite the same. Abstract class cannot be instantiated. In c++, abstract class are the classes with pure virtual functions. C++ allows multiple inheritance and virtual inheritance. Java distinguishes /abstract class/. A class can extend at most one abstract class but implement many interface. An interface cannot have data member and all methods are public. 
+* Abstract methods(Java) vs. pure virtual functions(c++)
+  Atn abstract method in Java can only be public or protected, but not private. In c++, it's perfectly valid to define a private virtual function. This c++ rule seems odd at first but perfectly sensible(for example, to implement Templated Method Pattern, Cf. /Effective c++/ Item 35.  The following example compiles and runs. Note that we can even change the access control in the subclass for pure virtual function.
+	#+BEGIN_SRC c++
+	#include <iostream>
+	using namespace std;
+	class Base{
+	public:
+      //The following line will generate compilation error since a constructor cannot call a pure virtual function
+	  //Base(){cout<<"In Base, calling Base::print()\n"; print();}
+	  void testPrint(){cout<<"In Base, calling Base::print()\n"; print();}
+	private:
+	  virtual void print()=0;
+	};
+	class Derived:public Base{
+	public:
+	  Derived(){print();}
+	  virtual void print() override {std::cout<<"In Derived::print\n";}// Note the use of keyword override 
+	};
+	int main(int argc, char* argv[]){
+	  Derived d;
+	  d.print();
+	  d.testPrint();
+	  return 0;
+	}
+
+
+	#+END_SRC
