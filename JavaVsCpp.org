@@ -209,3 +209,59 @@ public class Main {
 
 * Destructors(C++) vs. Finalizer(Java)
 + In c++ destructors are automatically call in the reverse order of construction. In java, finalizer() are not automatically chained, subclass needs to call super.final() explicitly. 
+
+* Concurrency 
+* Templating(C++) vs. Parameterized Type
++ primitive type can be passed as type parameter of a template in c++; but primitive cannot be used as type parameter in Java. Java introduced /boxed primitive/ to resolve the problem.     
+* Subclass Covariant 
+ + In c++, passing by value and passing by reference are different. 
+When passing by value, a single argument constructor will be called for implicit conversion (Cf. [[http://www.cplusplus.com/doc/tutorial/typecasting/][typecasting in C++]]). As a consequence, polymorphism is  lost.  
+  #+BEGIN_SRC cpp
+#include <iostream>
+using namespace std;
+class Derived;
+class Base{
+public:
+  virtual void print(){cout<<"In Base\n";}
+  Base(){cout<<"In default Base ctor\n";}
+  Base(const Derived& derived) {cout<<"In non-default ctor\n";} 
+};
+class Derived:public Base{
+public:
+  virtual void print()override{cout<<"In Derived\n";}
+};
+void print(Base b){
+  b.print();
+}
+int main(int argc, char* argv[]){
+  Derived d;
+  print(d); 
+  return 0;
+}
+
+//output : In default Base ctor
+// In non-default ctor
+//In Base
+  #+END_SRC
+  + In java uses the concept of covariant, and no constructor is called. It's just like pass by reference in c++. 
+#+BEGIN_SRC java
+   class Base{
+	public Base(Derived d) {System.out.println("In Base non-default ctor");}
+	public Base(){System.out.println("In Base default ctor");}
+	public void print(){System.out.println("In Base print ctor");}	
+}
+class Derived extends Base{
+	public void print(){System.out.println("In Derived");}
+}
+public class Covariant{
+	public static void print(Base obj){
+		obj.print();
+	}
+	public static void main(String[] args){
+		Derived d = new Derived();
+		print(d);
+	}
+}
+//output: In Base default ctor
+//output: In Derived
+#+END_SRC
