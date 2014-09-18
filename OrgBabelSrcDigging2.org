@@ -1,0 +1,42 @@
+-----------------------
+#+TITLE: Source Code Digging: Emacs-Org-Babel(2) How can Python talk to R? 
+#+DATE: <2014-09-02 Tue>
+#+CATEGORY: Emacs
+-----------------------
+This post looks at an tutorial example [[http://orgmode.org/worg/org-contrib/babel/intro.html#meta-programming-language][here]] and trace down the execution. We shall see how Babel enables [[http://en.wikipedia.org/wiki/Metaprogramming][Meta-programming]].  The tutorial example from the link above is not correct(Thank Sebastien Vauban for pointing this out to me). The correct example is as follows: 
+
+#+name: directories
+#+begin_src shell :results replace
+  cd ~ && du -sc * |grep -v total
+#+end_src
+`du -sc *` display disk usage for each file(-s) also the grant total(-c). `grep -v total` filters out the line which contains the word "total". If we run this command directly in the shell, we will see two columns output. But if we evaluate this block within Emacs-Org(place cursor inside the block and `C-c C-c`), we will actually have a nice tabular table back.
+
+#+BEGIN_SRC emacs 
+ ##+RESULTS: directories
+ |        0 | Applications                |
+ |    12696 | Desktop                     |
+ |  1240328 | Documents                   |
+ | 10081464 | Downloads                   |
+ |     2664 | Dropbox                     |
+ |  1814784 | Google Drive                |
+ |  7477104 | Library                     |
+ |   156168 | MLHackathon2014             |
+ |        0 | Movies                      |
+ |  2191664 | Music                       |
+ |        8 | Pictures                    |
+ |        0 | Public                      |
+ |  1026936 | learningnotes               |
+ |    12056 | lisp                        |
+ |     1848 | machine-learning            |
+ |        0 | scikit_learn_data           |
+ |     1568 | softwares                   |
+#+END_SRC
+
+
+
+
+ 
+ 
+
+	
+

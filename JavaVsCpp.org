@@ -2,9 +2,10 @@
 #+POSTID: 85
 -----------------------
 #+TITLE: Java vs. C++
-#+DATE: <2014-09-01 Mon>
+#+DATE: <2014-08-10 Sun>
 #+CATEGORY: Programming
 -----------------------
+This post  is a summary of the syntactical differences between C++ and Java. 
 * Exception: 
 + In Java, only subclass derived from Throwable can be thrown; in C++, any object can be thrown. 
 + Java has two type of exceptions: checked and unchecked; all exceptions in c++ are unchecked. C++ does have exception specification. But it's not part of function signature and it's not checked in complied time. At runtime, if the exception specification is not obeyed, std::unexpected is called (Cf. [[http://en.cppreference.com/w/cpp/language/except_spec][cppreference.com Exception Specification]]).
@@ -70,8 +71,140 @@ Java doesn't support private inheritance but C++ does. Private inheritance is on
   };
 #+END_SRC
 
+* Access control
+ + Java provides fourth level of access control, no modifier(package-private), public, private and protected while c++ has only three levels: public, private and protected. C++ has a concept of "friend" class. A class  can access its friend's private members.   
+ +  Both C++ and Java have "protected" access control([[http://en.cppreference.com/w/cpp/language/access][cpp access control ]], [[http://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html][java access control]], [[http://stackoverflow.com/questions/902922/why-does-the-protected-modifier-in-java-allow-access-to-other-classes-in-same][why does the protected modifier in Java allow access to other classes in the same package]]), but their meaning are not the same. In C++, /protected/ members can be accessed only by the class's friends and its subclasses. In Java, /protected/ members can be access also by anyclass within the package and a subclass of its class in another package. For example, the following is a valid java. In c++, subclasses change the access control when overriding. In java, subclass can also change the access control when overriding but with restriction([[http://www.tutorialspoint.com/java/java_access_modifiers.htm][AccessControl and Inheritance]])
+   #+BEGIN_SRC java 
+      //javac -cp /Users/shiyuang/learningnotes/java/HelloWorld/classes -d $CLASSPATH/mine *.java
+      /*
+  Base.java -- 
+   */
+package mine;
+public abstract class Base {
+	public abstract void draw();
+}
+/*
+  HelloWorld.java -- 
+   */
+package mine;
+public class HelloWorld {
+	public static void main(String[] args){
+		Derived d=new Derived();
+		d.draw();
+	}
+}
+/*
+  Derived.java -- 
+   */
+package mine; 
+public class Derived extends Base {
+	@Override
+	protected void draw(){
+		System.out.println("In Derived::draw()-3");
+	}
+}
+
+   #+END_SRC 
+
+* Constructors 
++ default constructor, 
+  In C++, there is always a default constructor(i.e., the constructor takes no argument) if we don't provide any constructors. In Java, this is not true. One consequence is that if there is no default constructor, and a subclass's constructor doesn't call super(..), there will be an compilation error. super(...) must be the first statement in subclass's constructors. 
++ Copy Constructor
+c++ provides copy constructors if we don't provide one while java doesn't. The following java code doesn't compile.
+#+BEGIN_SRC java
+// filename: Main.java
+ 
+class Complex {
+ 
+    private double re, im;
+ 
+    public Complex(double re, double im) {
+        this.re = re;
+        this.im = im;
+    }
+}
+ 
+public class Main {
+     
+    public static void main(String[] args) {
+        Complex c1 = new Complex(10, 15);  
+        Complex c2 = new Complex(c1);  // compiler error here
+    }
+}
+#+END_SRC
+
+* Data Hiding and the keywork /final/
+	#+BEGIN_SRC java 
+
+	/*
+	  KeywordFinal.java --
+	  The following example shows the problem data member is hidden by the subclass.
+	  In java, methods are virtual, but data is not. 
+	   */
+	class Base{
+		public int a = 10; 
+	}
+	class Derived extends Base{
+		public int a = 20; 
+	}
+	public class DataHiding{
+		public static void print(Base obj){
+			System.out.println("obj.a="+ obj.a);
+			obj.a = 30; 
+		}
+		public static void main(String[] args){
+			Derived obj = new Derived();
+			print(obj); // obj.a = 10; 
+		    System.out.println("obj.a="+ obj.a);// obj.a = 20;
+			System.out.println("obj.a="+ ((Base)obj).a);// obj.a = 30;
+			System.out.println("End");
+		}
+	}
+	#+END_SRC
+    C++ behaves exactly the same. 
+    #+BEGIN_SRC cpp
+     /*
+      DataHiding.cpp -- 
+     */
+
+	 #include <iostream>
+	 using namespace std;
+	 class Base{
+	 public:
+	   int a = 10;
+	 };
+	 class Derived: public Base{
+	 public:
+	   int a = 20; 
+	 };
+	 void print(Base& obj){
+	   cout<<"obj.a="<<obj.a<<"\n";
+	   obj.a = 30; 
+	 }
+	 int main(int argc, char* argv[]){
+	   Derived* obj = new Derived();
+	   print(*obj); //obj.a = 10; 
+	   cout<<"obj.a="<<obj->a<<"\n"; //obj.a=20;
+	   cout<<"obj.a="<<((Base*)obj)->a<<"\n";//obj.a=30; 
+	   return 0;
+    #+END_SRC
+    In Java, we can use the keyword "final" to prevent data being hidden by the subclasses. C++ does introduce contextual keyword /final/. However, it is only being used for methods to prevent being overridden by subclasses or used for a class to prevent from being further derived. 
+* "final" variables(Java) vs. const(C++)
+Cf. [[http://en.wikipedia.org/wiki/Final_(Java)][wiki-final variables in Java]]. Summary 
+
++  Unlike the value of a constant, the value of a final variable is not necessarily known at compile time. Java's final variables must be set in initializers or constructors.
++ Java's final variables does not guarantee immutability. 
+
+  #+BEGIN_SRC java 
+      public final Position pos;
+  #+END_SRC
+   The pos cannot change but its members can unless it's members are final too. 
+  #+BEGIN_SRC c++
+       const Position & pos. 
+  #+END_SRC 
+
 * "Final" class and override 
- Java provides has a concept of *final* class which cannot be subclassed.  There are also *final* methods and *final* variables.  *final* methods cannot be overridden or hidden by subclasses.  Java also has an annotation of *@Override* to allow compilation to detect whether a method actually overrides anything. The keywords *final* and *override* are only introduced to C++ in C++11. They are called contextual keywords which means whether override is a keyword or not depends on the context(for example, it's valid to name a variable to be override). Also, *override* is a suffix instead of prefix. The following example is from [[http://en.cppreference.com/w/cpp/language/override][cppreference.com]]
+   Java provides has a concept of *final* class which cannot be subclassed.  There are also *final* methods and *final* variables.  *final* methods cannot be overridden or hidden by subclasses.  Java also has an annotation of *@Override* to allow compilation to detect whether a method actually overrides anything. The keywords *final* and *override* are only introduced to C++ in C++11. They are called contextual keywords which means whether override is a keyword or not depends on the context(for example, it's valid to name a variable to be override). Also, *override* is a suffix instead of prefix. The following example is from [[http://en.cppreference.com/w/cpp/language/override][cppreference.com]]
 #+BEGIN_SRC c++
 struct A
 {
@@ -86,19 +219,6 @@ struct B : A
     void foo() override; // OK: B::foo overrides A::foo
     void bar() override; // Error: B::bar is not virtual
 };
-* "final" variables(Java) vs. const(C++)
-Cf. [[http://en.wikipedia.org/wiki/Final_(Java)][wiki-final variables in Java]]. Summary 
-
-+  Unlike the value of a constant, the value of a final variable is not necessarily known at compile time. Java's final variables must be set in initializers or constructors.
-+ Java's final variables does not guarantee immutability. 
-
-  #+BEGIN_SRC java 
-      public final Position pos;
-  #+END_SRC
-   The pos cannot change but its members can unless it's members are final too. 
-  #+BEGIN_SRC c++
-       const Position & pos. 
-  #+END_SRC 
 
 * Initializers
   + Java allows initializer one-liner or blocks. Initializers are executed whenever an instance of a class is created, regardless of which constructor is used to create the instance. The following is an example [[http://www.dummies.com/how-to/content/what-is-an-initializer-in-java.html][Java Initializer]]
@@ -145,67 +265,7 @@ Cf. [[http://en.wikipedia.org/wiki/Final_(Java)][wiki-final variables in Java]].
 
 
 	#+END_SRC
-* Access control
- + Java provides fourth level of access control, no modifier(package-private), public, private and protected while c++ has only three levels: public, private and protected. C++ has a concept of "friend" class. A class  can access its friend's private members.   
- +  Both C++ and Java have "protected" access control([[http://en.cppreference.com/w/cpp/language/access][cpp access control ]], [[http://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html][java access control]], [[http://stackoverflow.com/questions/902922/why-does-the-protected-modifier-in-java-allow-access-to-other-classes-in-same][why does the protected modifier in Java allow access to other classes in the same package]]), but their meaning are not the same. In C++, /protected/ members can be accessed only by the class's friends and its subclasses. In Java, /protected/ members can be access also by anyclass within the package and a subclass of its class in another package. For example, the following is a valid java. In c++, subclasses change the access control when overriding. In java, subclass can also change the access control when overriding but with restriction([[http://www.tutorialspoint.com/java/java_access_modifiers.htm][AccessControl and Inheritance]])
-   #+BEGIN_SRC java 
-      //javac -cp /Users/shiyuang/learningnotes/java/HelloWorld/classes -d $CLASSPATH/mine *.java
-      /*
-  Base.java -- 
-   */
-package mine;
-public abstract class Base {
-	public abstract void draw();
-}
-/*
-  HelloWorld.java -- 
-   */
-package mine;
-public class HelloWorld {
-	public static void main(String[] args){
-		Derived d=new Derived();
-		d.draw();
-	}
-}
-/*
-  Derived.java -- 
-   */
-package mine; 
-public class Derived extends Base {
-	@Override
-	protected void draw(){
-		System.out.println("In Derived::draw()-3");
-	}
-}
 
-   #+END_SRC 
-
-* Constructors 
-+ default constructor, 
-  In C++, there is always a default constructor(i.e., the constructor takes no argument). In Java, this is not true. One consequence is that if there is no default constructor, and a subclass's constructor doesn't call super(..), there will be an compilation error. super(...) must be the first statement in subclass's constructors. 
-+ Copy Constructor
-c++ provides copy constructors if we don't provide one while java doesn't. The following java code doesn't compile.
-#+BEGIN_SRC java
-// filename: Main.java
- 
-class Complex {
- 
-    private double re, im;
- 
-    public Complex(double re, double im) {
-        this.re = re;
-        this.im = im;
-    }
-}
- 
-public class Main {
-     
-    public static void main(String[] args) {
-        Complex c1 = new Complex(10, 15);  
-        Complex c2 = new Complex(c1);  // compiler error here
-    }
-}
-#+END_SRC
 
 * Destructors(C++) vs. Finalizer(Java)
 + In c++ destructors are automatically call in the reverse order of construction. In java, finalizer() are not automatically chained, subclass needs to call super.final() explicitly. 
@@ -265,3 +325,45 @@ public class Covariant{
 //output: In Base default ctor
 //output: In Derived
 #+END_SRC
+* Assignment = 
++ In Java, the assignment means different things for primitive type and reference type. For primitive type, "=" means copy; for reference type, "=" means "bound"
+#+BEGIN_SRC java
+/*
+  assignment3.java --
+  assignment means different things for primitive types and reference types.
+  For primitive type, "=" means copy; for reference type, "=" means "bound"
+   */
+
+//For primitive type, "=" means copy 
+public class assignment3 {
+	public static void main(String[] args){
+		int a = 10;
+		int b = a;
+	    System.out.println("a=" + a); //a=20;
+		System.out.println("b=" + b); // b=20;
+		a=20;
+		System.out.println("a=" + a); // a=20;
+		System.out.println("b=" + b); // b=10;
+		System.out.println("End");
+	}
+}
+
+//For reference type, "=" means "bound"
+class A{
+	public int a =10;
+}
+public class assignment2 {
+	public static void main(String[] args){
+		A a = new A();
+		A b = a;
+		System.out.println("a.a:" + a.a);
+		System.out.println("b.a:" + b.a);
+		a.a=20;
+		System.out.println("a.a:" + a.a);
+		System.out.println("b.a:" + b.a);
+		System.out.println("End");
+	}
+}
+#+END_SRC
+
+

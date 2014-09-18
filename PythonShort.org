@@ -1,0 +1,37 @@
+-----------------------
+#+TITLE: Python Summary 
+#+DATE: 
+#+CATEGORY: Programming
+-----------------------
+* Name Convention: 
+  The name convention recommended by Python Enhancement Proposals(PEP)(Cf. [[http://legacy.python.org/dev/peps/pep-0008/][PEP8: Style Guide to Python Code ]]) is quite different from the name convention adopted by C++ community. In particular, 
+  ** mixCase is discouraged. 
+  **  Any identifier in  a class of the form =__spam= (at least two leading underscores, at most one trailing underscore) is textually replaced with _classname__spam, where classname is the current class name with leading underscore(s) stripped(Cf. [[https://docs.python.org/2/tutorial/classes.html#private-variables-and-class-local-references][Pydoc: Private Variables and Class-local References ]]).
+  ** Any identifier in a class of the form =__getitem__= is a special method(Cf. [[https://docs.python.org/2/reference/datamodel.html#special-method-names][Special Methods]])
+  ** A method in a module whose name starts with an underscore is not exported by default(i.e., =__all__=  is not defined) when `from mymodule import *` is invoked. Even when =__all__= is set appropriately, it's still considered to be a good practice to prefix the internal interface (packages, modules, classes, functions, attributes or other names) with a single leading underscore (Cf. [[http://legacy.python.org/dev/peps/pep-0008/#public-and-internal-interfaces][PEP8: public and private interface]]). 
+
+* Modules: 
+** Related commands/variables
+     + show all loaded modules: sys.modules
+** Modules are first class objects. 
+     + It's a common practice to import a module in another module initialization file =__init__.py=. For example, Pandas imports numpy and hence we can refer numpy as pandas.np. However, this is not visible to user.  So users could import numpy again. In this case, all imported numpy binds to the same object and hence have the same id(...).
+** All statements in the source file are executed. 
+
+** Use =__all__ ['bar','foo']= to precisely control the set of names import by from /module/ import =*=
+  
+** Use /from module import foo/
+   This will load the specific definitions into a current namespace. However, the binding rules for variables.  The global namespace for a function  is always the module in which the function is defined.
+  #+BEGIN_SRC python 
+  from spam import foo
+  a = 42
+  foo() # Prints "I'm foo and a is 37"
+  #+END_SRC  
+  ** The use of =__name__=:
+  Each module defines a variable =__name__= with the module's name. The programs can exam this variable to determine the module in which they are executing. The top level module of the interpreter is called =__main__=.Programs specified in the command line or entered interactively run inside =__main=. The following program prints "in mymodule" when being executed by 'import mymodule' and print 'in __main__ ' when executed by `python mymodule.py`
+   #+BEGIN_SRC python 
+     ## mymodule.py
+     if __name__ == '__main__':
+        print "in __main__"
+	 else:
+	    print "in %s" % (__name__,) 
+   #+END_SRC

@@ -1,8 +1,8 @@
 * Summary
 * Java's Way: Born to be elegant.
 #+BEGIN_SRC emacs-lisp
-    (defun org-xor (a b)
-      "Exclusive or."
+  (defun org-xor (a b)
+    "Exclusive or."
     (if a (not b) b))
 #+END_SRC
 

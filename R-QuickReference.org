@@ -1,0 +1,27 @@
+-----------------------
+#+TITLE: R Quick Reference
+#+DATE: <2014-09-07 Sun>
+#+CATEGORY: MachineLearning
+-----------------------
+
+* Session Commands 
+** Environment inspection
+  R saves the workplace object to the current directory .RData and the command history to .Rhistroy 
+  #+BEGIN_SRC R
+   >>objects() ##list all objects in the workspace 
+   >>rm(obj1, obj2,...) # remove objects in the worksplace 
+  #+END_SRC
+**  Help
+  + help("[[")
+  + help.start(): 
+    This will launch a Web browser that allows the help pages to be browsed with hyperlinks(it only uses localhost: http://127.0.0.1:21389/doc/html/Search.html).This link Search Engine & Keywords is particularly useful. We can also use the internet link http://stat.ethz.ch/R-manual/R-devel/doc/html/. The local host and the internet link should be the same. 
+  + help.search() (alternative ??, eg, ??solve)
+** Executing Commands: 
+   #+BEGIN_SRC R 
+      ## execute a script 
+      source("commands.R")
+      ## Redirecting output
+      sink("record.lis")
+   #+END_SRC
+   
+

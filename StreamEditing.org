@@ -24,7 +24,7 @@
          echo "abcd"|sed -s -e "1 y/a/b/" sed-test-1.in sed-test-2.in -  
       #+END_SRC
 
-** Annotated Examples 
+** Examples 
 ***  Centering Lines with /sed/. 
 In GNU sed manual, this script(https://www.gnu.org/software/sed/manual/sed.html#Centering-lines) is used to demonstrate how to center each line with sed. But this script is *wrong* and *dangerous!*. If a line is longer than 80 characters, the line will be silently truncated.  
      #+BEGIN_SRC shell
@@ -76,6 +76,12 @@ Sometimes we think in terms of word and want the match for the whole word. In th
   #+BEGIN_SRC shell
   cut --complement -d, -f3 adult.data > income_train_data.csv
   #+END_SRC
+* /column/ 
+  + The following one-liner is taken from [[https://chrisjean.com/2011/06/17/view-csv-data-from-the-command-line/][this post]]. It allows us to display s csv(comma-separated-value) file in a nice format using command lines
+   #+BEGIN_SRC shell 
+     cat file.csv | sed -e 's/,,/, ,/g' | column -s, -t | less -#5 -N -S
+   #+END_SRC
+   The sed command is used to handle the corner case of empty field; the 'g' means replacing all matches not just the first;  the `-s` in the `column` command is to specify delimiters; `-t` creates a table for pretty print; `-#` in the `less command `specifies the number of positions to scroll using right/leftarrow key; `-N` displays the line number and `-S` causes the line to be chopped rather than folded ( that is , `M-x toggle-truncate-lines` in Emacs). 
 * Footnotes
 
 [fn:1] 
