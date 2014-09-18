@@ -17,7 +17,7 @@
      + It's a common practice to import a module in another module initialization file =__init__.py=. For example, Pandas imports numpy and hence we can refer numpy as pandas.np. However, this is not visible to user.  So users could import numpy again. In this case, all imported numpy binds to the same object and hence have the same id(...).
 ** All statements in the source file are executed. 
 
-** Use =__all__ ['bar','foo']= to precisely control the set of names import by from /module/ import =*=
+** Use =__all__= = ['bar','foo'] to precisely control the set of names import by from /module/ import =*= 
   
 ** Use /from module import foo/
    This will load the specific definitions into a current namespace. However, the binding rules for variables.  The global namespace for a function  is always the module in which the function is defined.
