@@ -108,7 +108,8 @@ public class Derived extends Base {
 
 * Constructors 
 + default constructor, 
-  In C++, there is always a default constructor(i.e., the constructor takes no argument) if we don't provide any constructors. In Java, this is not true. One consequence is that if there is no default constructor, and a subclass's constructor doesn't call super(..), there will be an compilation error. super(...) must be the first statement in subclass's constructors. 
+   Both C++ and Java automatically generate default constructor only when no constructors are defined. [[http://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.8.9][Java default constructor]]; In C++, base class constructor is involved in the initializer while in Java the Base class constructor is involved using the super(..) in the first line.  If a constructor does not explicitly invoke a superclass constructor, the Java compiler automatically inserts a call to the no-argument constructor of the superclass. If the super class does not have a no-argument constructor, you will get a compile-time error. Object does have such a constructor, so if Object is the only superclass, there is no problem()(Cf. [[http://docs.oracle.com/javase/tutorial/java/IandI/super.html][Using the keyword super]] )
+
 + Copy Constructor
 c++ provides copy constructors if we don't provide one while java doesn't. The following java code doesn't compile.
 #+BEGIN_SRC java

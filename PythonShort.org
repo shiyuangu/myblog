@@ -35,3 +35,20 @@
 	 else:
 	    print "in %s" % (__name__,) 
    #+END_SRC
+* OOP:
+  + Unlike C++/Java, Base class _init_() is not automatically invoked:
+  #+BEGIN_SRC python
+        class Base(object):
+            def __init__(self):
+                print "In Base::init"
+                self.a=1
+        class Derived(Base):
+            def __init__(self):
+                print "In Derive::init"
+                self.b=1
+            def myprint(self):
+                print "a=%d" % self.a
+        obj = Derived()
+        obj.myprint()   #error AttributeError: 'Derived' object has no attribute 'a'
+
+  #+END_SRC
