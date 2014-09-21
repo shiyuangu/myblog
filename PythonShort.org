@@ -115,3 +115,43 @@ f._num # AttributeError: _num; _num doesn't exist, not yet.
 f.num=44 # the descriptor's __get__ method is called which creates a new field _num
 f._num  #44, now _num exists after a call to f.num
 #+END_SRC
+
+* Scoping Rules and Closure
+  + Variables in nested Functions are bound using /lexical scoping/. That is, names are resolved by first checking the local scope and then all enclosing scopres of the outer function definition from the innermost scope to the outermost scope. If no match is found, the global and built-in namespace are checked. Although names in enclosing scopes are accessible. Python 2 only allows variables to be reassigned in the innermost scope(local variables) and the global namespace(using global). Python 3 allows this by using nonlocal. 
+
+  #+BEGIN_SRC python
+  def countdown(n):
+     def next():
+       nonlocal n #only valid in python 3
+       r=n
+       n -= 1
+       print "r=",r
+     return next
+  #in python 2.x , we can use list and dictionary to workaround. 
+  def countdown(n):
+    l=[n]
+    def next():
+       r=l
+       r[0] -= 1
+       print "r=",r
+    return next
+  #+END_SRC
+  + When the statements that make up a function are packaged together with the environment in which they execute, the resulting object is known as closure. One use of closure is for lazy/delayed evaluation. Using this closure pattern is faster than using a class to capture the variables. 
+  #+BEGIN_SRC python
+  from urlib.request import urlopen(Python3)
+  def page(url):
+      def get():
+	      return urlopen(url).read()
+  python = page("http://www.python.org")
+  >>> python 
+  <function get at 0x95d5f0>
+  jython = page("http://www.jython.org")
+  >>> jython
+  <function get at 0x9735f0>
+  # the clousre is captured in the function object 
+  python.__closure__[0].cell_contents
+  'http://www.python.org'
+  jython.__clousre__[0].cell_contents
+  'http://www.jython.org'
+  #+END_SRC
+
