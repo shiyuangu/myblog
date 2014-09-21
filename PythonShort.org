@@ -74,6 +74,7 @@
   Speicial Methods __int__(), __float__() ect. are called by explicit conversion such as int(x), float(x), but never called implicitly to perform type conversion during mix-type arithmetic. 
 
 * MetaClass:
+In the following code, the descriptor TypedProperty doesn't hold the value directly. Instead, it holds the name of itself in the class. How the TypedProperty knows its own name in the class it belongs to? The magic in the Meta class. The variable num is a member of class Foo. When Foo is created by the meta class TypedMeta, the metaclass __new__(..) method has a dictionary, which is a map betweem the member name and the memeber. TypedMeta.__new__(..) changes the num's field name to num's name suffixed by an underscore.  Now, basically, the descriptor simply becomes a *proxy* to the underlining field "_num" which is stored in Foo itself. TypedMeta also use the __slots__ to forbid adding any new field to the class. 
 #+BEGIN_SRC python
 class TypedProperty(object):
     def __init__(self, type, default=None):
@@ -110,4 +111,7 @@ class Foo(Typed):
     num =  TypedProperty(int,42)
 f=Foo()
 f.num #output self.name _num, 42
+f._num # AttributeError: _num; _num doesn't exist, not yet. 
+f.num=44 # the descriptor's __get__ method is called which creates a new field _num
+f._num  #44, now _num exists after a call to f.num
 #+END_SRC
