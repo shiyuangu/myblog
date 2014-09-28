@@ -1,0 +1,24 @@
+#+BLOG: wordpress
+#+POSTID: 98
+-----------------------
+#+TITLE: Emacs-ipython-notebook
+#+DATE: <2014-09-27 Sat>
+#+CATEGORY: Emacs, Python
+-----------------------
+This is a note of my work flow using ipython notebook through Emacs package ein ([[http://tkf.github.io/emacs-ipython-notebook/][EIN]]). 
+1. Setup ein (Cf. myein.el or /path/to/ein/lisp/zeroein.el)
+2. In terminal, `cd /path/to/notebook` and *`ipython notebook`*. This runs a ipython notebook server.  
+3. *`M-x ein:notebooklist-open`* and select the notebook file. 
+   We can run the notebook cell by cell in a interactive way. 
+4. Connect to a notebook: 
+   EIN allows us to create/open a python source file in another buffer, and connect it to the notebook kernel. This allows sharing the kernel and auto-completion (powered by jedi)
+   1. Switch to the buffer with the python source file .py 
+   2. `M-x ein:connect-to-notebook-command`. This will prompt us to select the already open notebook buffers and connect the current buffer to the notebook buffers. With prefix argument, the command also allows to select the notebook which are not open yet. 
+   3. Step (2) enable the minor mode *ein:connect-mode* which provides convenient keymaps for auto-completion, ect. 
+       + '.' runs the *ein:jedi-dot-complete* command
+       + *C-c C-.* or *M-.* runs *ein:pytools-jump-to-source-command*
+       + *C-c C-,* or *M-,* ein:pytools-jump-back-command: Go back to the point where ein:pytools-jump-to-source-command is executed last time. When the prefix argument C-u is given, open the last point in the other window.
+       + *C-u C-c C-f* runs the command *ein:pytools-request-tooltip-or-help* which shows the details info about the current content in the pager buffer. Without the prefix, the info is shown in a popup message box. The function *ein:pytools-request-tooltip-or-help* which calls the function *ein:kernel-construct-help-string* which would combine the info from /docstring/, /init_docstring/ and /docstring/.  
+       + *C-c C-/ ein:notebook-scratchsheet-open* Open “scratch sheet”. Open a new one when prefix argument is given. Scratch sheet is almost identical to worksheet. However, EIN will not save the buffer. Use this buffer like of normal IPython console. Note that you can always copy cells into the normal worksheet to save result.
+
+
