@@ -21,7 +21,7 @@ Debugger entered--beginning evaluation of function call form:
   org-ctrl-c-ctrl-c(nil)
   call-interactively(org-ctrl-c-ctrl-c nil nil)
 #+END_VERSE
-+ The star "*" is the location where the debugger would stop(or "enter") and display the return value of the expression; the "d" command continue the execution until next lisp function. The lisp function then would be put on top of the debugger; the "u" command removes the star which means that the debugger would not stop(or "enter") and shows the return value when the frame exits; The "c" command continue execution until the next flagged frame returns. In GDB terminology, "d" set a break point at next lisp function, "u" unset the break point, "c" continues. 
++ The star "*" is the location where the debugger would stop(or "enter") and display the return value of the expression; the "*d*" command continue the execution until next lisp function. The lisp function then would be put on top of the debugger; the "u" command removes the star which means that the debugger would not stop(or "enter") and shows the return value when the frame exits; The "c" command continue execution until the next flagged frame returns. In GDB terminology, "d" set a break point at next lisp function, "u" unset the break point, "c" continues. 
 
 *Gotcha
 + Debugger might show different src code then what we see in the src file due to the macros, for example, "when" in src file becomes "if" in debugger. 
