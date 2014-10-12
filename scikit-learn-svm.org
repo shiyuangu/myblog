@@ -1,0 +1,76 @@
+-----------------------
+#+TITLE: scikit-learn: SVM
+#+DATE: <2014-10-11 Sat>
+#+CATEGORY: MachineLearning
+-----------------------
+The module scikit-learn.svm implements Support Vector Machines. Internally, scikit-learn uses [[http://www.csie.ntu.edu.tw/~cjlin/libsvm/][libsvm]] and [[http://www.csie.ntu.edu.tw/~cjlin/liblinear/][liblinear]].  [[http://scikit-learn.org/stable/modules/svm.html#svm][scikit-learn:SVM User Guide]] has a general introduction to SVM and the APIs. However, the user guide has errors when it comes to dual coefficients and multi-class problems.  This blog will reveal what happen behind the scene by digging into the source code of [[http://www.csie.ntu.edu.tw/~cjlin/libsvm/][libsvm]].
+
+Mathematically, SVM is an constrained optimization problem where the objective function is quadratic and constraints are linear. Each training example gives a constraint. Quadratic programming with linear constraints has been studied extensively and there exist many methods. The implementation of [[http://www.csie.ntu.edu.tw/~cjlin/libsvm/][libsvm]] is based on the concept of "dual". To understand the code, we first need to understand the concept of "dual"
+
+* What is "dual"?
+For any constrained optimization problem, we can formulate its dual problem using method of [[http://en.wikipedia.org/wiki/Lagrange_multiplier][Lagrange Multiplier]]. Each variable in the /dual problem/ corresponds to one constraint in the /primal problem/. The dual variables are also called Lagrange Multipliers.  It turns out that if we can solve the dual problem and find out the Lagrange Multipliers, the primal problem can be also solved using *unconstrained* optimization techniques. The process of solving the Lagrange Multipliers is actually the process of identifying the  *active* constraints in the /primal problem/. *Active* constraints are the constrains that really matter in the primal problem. If we remove an active constraint, we would end up with a different solution. The removal of *inactive* constraints, however, doesn't change the solution. Recall that each constraint in the primal problem corresponds to one training data point. These mathematical results imply that for svm, actually only a few training data points determine the complete solution of the SVM. Those training samples are called *support vectors*. The mathematical properties also mean that SVM can throw away all training examples which are not support vectors and only remember the support vectors to make a prediction. The property sets SVM apart from other kernel methods like *k-NN* which needs to know all training examples to make a prediction. SVM is hence a *sparse* kernel machine [fn:1].  
+
+Let \(\{x_i,y_i\}(i=1,2,...,N\) be training data. The decision function(sklearn.svm.SVC.decision) of SVM  is
+\begin{equation}\label{eq:decisionFunction}
+  f(x) = sgn(\sum_{i=1}^{nSV} y_i\alpha_i K(x_i,x)+\rho)
+\end{equation} 
+
+where $K(\cdot, \cdot)$ is the kernel. *Kernel* is a generalization of inner product and specifies the metric in a vector space(which could be infinite dimensional). *Kernel* is another important ingredient of SVM which needs to be specified before the training. Only a few kernels are available in sklearn.svm.SVC. The $nSV$ denotes the number of support vectors which are obtained in the training process (accessible by python property sklearn.svm.SVC.n_support_). In practice, the number of support vectors are usually much fewer than number of training examples, i.e., $nSV << N$. Compared to *k-NN*, the prediction of SVM is much faster (but the training is expensive and slow). The $\rho$ is the intercept and can be accessible by sklearn.svm.SVC.intercept_ (/Hint/: If we can using Emacs and EIN, we can directly jump to the documentaion of SVC by `C-u C-c C-f` in notebook mode). *CAUTION:* sklearn.svm.SVC.intercept_ stores the $-\rho$ instead.  
+
+The Sklearn class sklearn.svm.SVC is a wrapper around C++/Java library [[http://www.csie.ntu.edu.tw/~cjlin/libsvm/][libsvm]] . Not surprisingly, libsvm data structure is a direct mapping of math concepts. 
+
+#+BEGIN_SRC c++
+// libsvm/svm.h 
+//
+// svm_model
+// 
+struct svm_model
+{
+	struct svm_parameter param;	/* parameter */
+	int nr_class;		/* number of classes, = 2 in regression/one class svm */
+	int l;			/* total #SV */
+	struct svm_node **SV;		/* SVs (SV[l]) */
+	double **sv_coef;	/* coefficients for SVs in decision functions (sv_coef[k-1][l]) */
+	double *rho;		/* constants in decision functions (rho[k*(k-1)/2]) */
+	double *probA;		/* pariwise probability information */
+	double *probB;
+	int *sv_indices;        /* sv_indices[0,...,nSV-1] are values in [1,...,num_traning_data] to indicate SVs in the training set */
+
+	/* for classification only */
+
+	int *label;		/* label of each class (label[k]) */
+	int *nSV;		/* number of SVs for each class (nSV[k]) */
+				/* nSV[0] + nSV[1] + ... + nSV[k-1] = l */
+	/* XXX */
+	int free_sv;		/* 1 if svm_model is created by svm_load_model*/
+				/* 0 if svm_model is created by svm_train */
+};
+
+struct svm_parameter
+{
+	int svm_type;
+	int kernel_type;
+	int degree;	/* for poly */
+	double gamma;	/* for poly/rbf/sigmoid */
+	double coef0;	/* for poly/sigmoid */
+
+	/* these are for training only */
+	double cache_size; /* in MB */
+	double eps;	/* stopping criteria */
+	double C;	/* for C_SVC, EPSILON_SVR and NU_SVR */
+	int nr_weight;		/* for C_SVC */
+	int *weight_label;	/* for C_SVC */
+	double* weight;		/* for C_SVC */
+	double nu;	/* for NU_SVC, ONE_CLASS, and NU_SVR */
+	double p;	/* for EPSILON_SVR */
+	int shrinking;	/* use the shrinking heuristics */
+	int probability; /* do probability estimates */
+};
+#+END_SRC
+
+The /=svm_node=/ struct is for *one* attributes of the data point. All the attributes in one data point is stored as a /svm_node/ array in sparse format (Cf. libsvm/README for a more detail explanation and examples).  /=struct svm_node **SV=/ store the *support vectors*. The two dimensional array /=double **sv_coef=/ stores the product $y_i\alpha_i$. The c array /=double **sv_coef=/ are mapped directly to ~sklearn.svm.SVM.dual_coef_~. In case of two-class problem, the two dimensional array degenerates to one dimension and it's just the $y_i\alpha_i$ in equation (\ref{eq:decisionFunction}). For multi-class problem, the structure of =double ** sv_coef= (a.k.a. =sklearn.svm.SVC.dual_coef_=) is hard to grasp and  [[http://scikit-learn.org/stable/modules/svm.html#svm][scikit-learn:SVM User Guide]] has errors in its explanation. The correct structure will be revealed in the next section of this blog. The other variables in the /=struct svm_model=/ and =svm_parameter= are self-explaining. One thing noteworthy is that the corresponding class labels of the support vectors are not directly accessible(but could be found by simple calculation).  
+ 
+* Footnotes
+
+[fn:1] Pattern Recognition and Machine Learning, C.M. Bishop. 
+
