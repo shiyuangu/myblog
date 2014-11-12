@@ -112,7 +112,7 @@ class Foo(Typed):
 f=Foo()
 f.num #output self.name _num, 42
 f._num # AttributeError: _num; _num doesn't exist, not yet. 
-f.num=44 # the descriptor's __get__ method is called which creates a new field _num
+f.num=44 # the descriptor's __set__ method is called which creates a new field _num
 f._num  #44, now _num exists after a call to f.num
 #+END_SRC
 
@@ -142,6 +142,7 @@ f._num  #44, now _num exists after a call to f.num
   def page(url):
       def get():
 	      return urlopen(url).read()
+      return get
   python = page("http://www.python.org")
   >>> python 
   <function get at 0x95d5f0>
