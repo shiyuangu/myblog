@@ -81,7 +81,11 @@ Sometimes we think in terms of word and want the match for the whole word. In th
    #+BEGIN_SRC shell 
      cat file.csv | sed -e 's/,,/, ,/g' | column -s, -t | less -#5 -N -S
    #+END_SRC
-   The sed command is used to handle the corner case of empty field; the 'g' means replacing all matches not just the first;  the `-s` in the `column` command is to specify delimiters; `-t` creates a table for pretty print; `-#` in the `less command `specifies the number of positions to scroll using right/leftarrow key; `-N` displays the line number and `-S` causes the line to be chopped rather than folded ( that is , `M-x toggle-truncate-lines` in Emacs). 
+   The sed command is used to handle the corner case of empty field; the 'g' means replacing all matches not just the first;  the `-s` in the `column` command is to specify delimiters; `-t` creates a table for pretty print; `-#` in the `less command `specifies the number of positions to scroll using right/leftarrow key; `-N` displays the line number and `-S` causes the line to be chopped rather than folded ( that is , `M-x toggle-truncate-lines` in Emacs). In case of  tab separated file with missing field, we can replace tab with comma first, and then fill in the missing field with space, 
+   #+BEGIN_SRC shell
+   cat file.txt|sed -e 's/\t/,/g;s/,,/, ,/g'|column -s, -t|less -#5 -S
+   #+END_SRC
+   The sed command 's/\t/,/g' replace tab with comma and 's/,,/, ,/g' fills in the missing field with a space. Note that without the fill-in step, the alignment is wrong. 
 * Footnotes
 
 [fn:1] 
