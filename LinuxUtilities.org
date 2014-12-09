@@ -40,3 +40,13 @@ This article means to summary some commonly utility programs I uses on a daily b
 
 
  
+* rsync
++ Rsync between remote and local through ssh 
+#+BEGIN_SRC shell 
+rsync -avzhe ssh --progress shiyuang@shiyuang.desktop.amazon.com://workplace/shiyuang/PremiaEstimation .
+#+END_SRC
+-a: archive
+-v: verbose
+-z: compress file data during transfer
+-h: human readable info
+-e ssh: connect through ssh 
