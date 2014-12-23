@@ -1,16 +1,56 @@
-#+BLOG: wordpress
-#+POSTID: 58
 -----------------------
-#+TITLE: Line Stream Editing
-#+DATE: <2014-08-13 Wed>
-#+CATEGORY: Scripting
+#+TITLE: ShellScript
+#+DATE: <2014-12-23 Tue>
+#+CATEGORY: 
 -----------------------
-* /sed/ 
-** Features 
+* Flow Control 
+#+BEGIN_SRC shell
+
+#+END_SRC
+* Piping
++ Piping with stdin redirection. Without the stdin redirection, emacs complains the stdin is not tty. The "$@" is a [[http://unixhelp.ed.ac.uk/scrpt/scrpt2.2.2.html][Special Shell Variables]] which is a string containing all arguments to the shell 
+  #+BEGIN_SRC shell
+  ls prod_JP*|xargs zsh -c 'emacs "$@"</dev/tty'
+  #+END_SRC
+* Utilities
+** find (Cf. [fn:2]):
++ -exec 
+  #+BEGIN_SRC shell
+    #The following commands do the same things: 
+    find / -name core -exec /bin/rm -f '{}' \;
+    find / -name core -exec /bin/rm -f '{}' +
+    find / -name core | xargs /bin/rm -f
+  #+END_SRC
+    - The ‑exec is followed by some shell command line, ended with a semicolon (“;”). (The semicolon must be quoted from the shell, so find can see it!)  Within that command line, the word “{}” will expand out to the name of the found file. An alternate form of ‑exec ends with a plus-sign, not a semi-colon.  This form collects the filenames into groups or sets, and runs the command once per set.  (This is exactly what xargs does, to prevent argument lists from becoming too long for the system to handle.)[fn:2]
+    + To handle exotic filenames(which contain spaces or newlines), use the form "find .. -print0|xargs -0 ..."
+
++ Gotcha: When no action is given, "-print" is assumed and grouping is perform. This could messed up the boolean operation precedence and give surprising results. See [fn:2].  
+** tar
++ Archive and gzip a whole directory:  
+#+BEGIN_SRC shell
+  tar czvf ShiyuanGu.tar.gz ShiyuanGu  
+#+END_SRC
++ Extract and uncompress: 
+#+BEGIN_SRC shell
+  tar xzvf ShiyuanGu.tar.gz ShiyuanGu  
+#+END_SRC
+** rsync
++ Rsync between remote and local through ssh 
+#+BEGIN_SRC shell 
+rsync -avzhe ssh --progress shiyuang@shiyuang.desktop.amazon.com://workplace/shiyuang/PremiaEstimation .
+#+END_SRC
+-a: archive
+-v: verbose
+-z: compress file data during transfer
+-h: human readable info
+-e ssh: connect through ssh 
+
+** /sed/ 
+*** Features 
  + Make only one pass over the inputs and hence more efficient. 
  + Ability to filter text in a pipeline
   
-** Synopsis: 
+*** Synopsis: 
     #+BEGIN_SRC shell
       sed [OPTION]... {script} [input-file]
     #+END_SRC
@@ -24,8 +64,8 @@
          echo "abcd"|sed -s -e "1 y/a/b/" sed-test-1.in sed-test-2.in -  
       #+END_SRC
 
-** Examples 
-***  Centering Lines with /sed/. 
+*** Examples 
+****  Centering Lines with /sed/. 
 In GNU sed manual, this script(https://www.gnu.org/software/sed/manual/sed.html#Centering-lines) is used to demonstrate how to center each line with sed. But this script is *wrong* and *dangerous!*. If a line is longer than 80 characters, the line will be silently truncated.  
      #+BEGIN_SRC shell
 	 #!/usr/bin/sed -f
@@ -60,23 +100,23 @@ In GNU sed manual, this script(https://www.gnu.org/software/sed/manual/sed.html#
      # Grouping and subexpression matching allows us to do arithmetics. 
 	 s/^\(.*\)\n\(.*\)\2/\2\1/
      #+END_SRC
-*** Replace leading spaces with tabs. 
+**** Replace leading spaces with tabs. 
 Sometimes we need to change indentation style, for example, replace every leading four spaces with one tab. The following one-liner will do the work. Note the use of label, conditional jump command t and grouping. The command t jumps to the label only  when the substitution succeeds. The command t and the label forms an implicit loop where each iteration replaces a four spaces with a tab. For the meanings of `{}` and `+`, refer to the `find` utility  [[http://shiyuangu.com/2014/08/13/linux-utility-programs/][here]] .
      #+BEGIN_SRC 
          find . -iname "*.ion" -exec sed -i ':l s/^\(\t*\) \{4\}/\1\t/; t l' {} +    
      #+END_SRC
      
-** Gotcha: 
-*** The s command and the g flags. 
+*** Gotcha: 
+**** The s command and the g flags. 
 The command 's/Hello/HelloWorld/' only replace the first match of each line. To replace all matches, use the g flag, 's/Hello/HelloWorld/g'. 
-*** Word boundary
+**** Word boundary
 Sometimes we think in terms of word and want the match for the whole word. In this case, use the world boundary "\b" 
-* /cut/
+** /cut/
  + Delete the third field with a common as field separator 
   #+BEGIN_SRC shell
   cut --complement -d, -f3 adult.data > income_train_data.csv
   #+END_SRC
-* /column/ 
+** /column/ 
   + The following one-liner is taken from [[https://chrisjean.com/2011/06/17/view-csv-data-from-the-command-line/][this post]]. It allows us to display s csv(comma-separated-value) file in a nice format using command lines
    #+BEGIN_SRC shell 
      cat file.csv | sed -e 's/,,/, ,/g' | column -s, -t | less -#5 -N -S
@@ -89,3 +129,11 @@ Sometimes we think in terms of word and want the match for the whole word. In th
 * Footnotes
 
 [fn:1] 
+* Footnotes
+
+[fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]
+
+[fn:2] [[http://content.hccfl.edu/pollock/unix/findcmd.htm][A Unix/Linux find command Tutorial]]
+
+
+ 

@@ -1,0 +1,167 @@
+-----------------------
+#+TITLE: Python Summary 
+#+DATE: 
+#+CATEGORY: Programming
+-----------------------
+* Name Convention: 
+  The name convention recommended by Python Enhancement Proposals(PEP)(Cf. [[http://legacy.python.org/dev/peps/pep-0008/][PEP8: Style Guide to Python Code ]]) is quite different from the name convention adopted by C++ community. In particular, 
+  ** mixCase is discouraged. 
+  **  Any identifier in  a class of the form =__spam= (at least two leading underscores, at most one trailing underscore) is textually replaced with _classname__spam, where classname is the current class name with leading underscore(s) stripped(Cf. [[https://docs.python.org/2/tutorial/classes.html#private-variables-and-class-local-references][Pydoc: Private Variables and Class-local References ]]).
+  ** Any identifier in a class of the form =__getitem__= is a special method(Cf. [[https://docs.python.org/2/reference/datamodel.html#special-method-names][Special Methods]])
+  ** A method in a module whose name starts with an underscore is not exported by default(i.e., =__all__=  is not defined) when `from mymodule import *` is invoked. Even when =__all__= is set appropriately, it's still considered to be a good practice to prefix the internal interface (packages, modules, classes, functions, attributes or other names) with a single leading underscore (Cf. [[http://legacy.python.org/dev/peps/pep-0008/#public-and-internal-interfaces][PEP8: public and private interface]]). 
+
+* Modules: 
+** Related commands/variables
+     + show all loaded modules: sys.modules
+** Modules are first class objects. 
+     + It's a common practice to import a module in another module initialization file =__init__.py=. For example, Pandas imports numpy and hence we can refer numpy as pandas.np. However, this is not visible to user.  So users could import numpy again. In this case, all imported numpy binds to the same object and hence have the same id(...).
+** All statements in the source file are executed. 
+
+** Use =__all__= = ['bar','foo'] to precisely control the set of names import by from /module/ import =*= 
+  
+** Use /from module import foo/
+   This will load the specific definitions into a current namespace. However, the binding rules for variables.  The global namespace for a function  is always the module in which the function is defined.
+  #+BEGIN_SRC python 
+  from spam import foo
+  a = 42
+  foo() # Prints "I'm foo and a is 37"
+  #+END_SRC  
+  ** The use of =__name__=:
+  Each module defines a variable =__name__= with the module's name. The programs can exam this variable to determine the module in which they are executing. The top level module of the interpreter is called =__main__=.Programs specified in the command line or entered interactively run inside =__main=. The following program prints "in mymodule" when being executed by 'import mymodule' and print 'in __main__ ' when executed by `python mymodule.py`
+   #+BEGIN_SRC python 
+     ## mymodule.py
+     if __name__ == '__main__':
+        print "in __main__"
+	 else:
+	    print "in %s" % (__name__,) 
+   #+END_SRC
+* OOP:
+  + Unlike C++/Java, Base class _init_() is not automatically invoked:
+  #+BEGIN_SRC python
+        class Base(object):
+            def __init__(self):
+                print "In Base::init"
+                self.a=1
+        class Derived(Base):
+            def __init__(self):
+                print "In Derive::init"
+                self.b=1
+            def myprint(self):
+                print "a=%d" % self.a
+        obj = Derived()
+        obj.myprint()   #error AttributeError: 'Derived' object has no attribute 'a'
+
+  #+END_SRC
+ + In Python, the instance's attribute can be deleted.
+ #+BEGIN_SRC python 
+   class MyObject:
+       """
+       Test some pythonic OO features. 
+       """
+       a = 10;
+       def __init__(self):
+           self.b = 10;
+       def f(self):
+           print "this is f"
+       
+   obj = MyObject()
+   del obj.a #error: only instance attribute can be deleted. 
+   del obj.f #same error as above
+   del obj.b #correct. 
+ #+END_SRC
+
+* Type conversion
+  Speicial Methods __int__(), __float__() ect. are called by explicit conversion such as int(x), float(x), but never called implicitly to perform type conversion during mix-type arithmetic. 
+
+* MetaClass:
+In the following code, the descriptor TypedProperty doesn't hold the value directly. Instead, it holds the name of itself in the class. How the TypedProperty knows its own name in the class it belongs to? The magic in the Meta class. The variable num is a member of class Foo. When Foo is created by the meta class TypedMeta, the metaclass __new__(..) method has a dictionary, which is a map betweem the member name and the memeber. TypedMeta.__new__(..) changes the num's field name to num's name suffixed by an underscore.  Now, basically, the descriptor simply becomes a *proxy* to the underlining field "_num" which is stored in Foo itself. TypedMeta also use the __slots__ to forbid adding any new field to the class. 
+#+BEGIN_SRC python
+class TypedProperty(object):
+    def __init__(self, type, default=None):
+        self.name = None
+        self.type = type
+        if default: 
+            self.default = default
+        else:
+            self.default = type()
+    def __get__(self, instance, cls):
+        print "self.name",self.name
+        return getattr(instance,self.name, self.default)
+    def __set__(self, instance, value):
+        if not isinstance(value, self.type):
+            raise TypeError("Must be a %s" % self.type)
+        setattr(instance, self.name, value)
+    def __delete__(self, instance):
+        raise AttributeError("cannot delete attribute")
+class TypedMeta(type):
+    def __new__(cls, name, bases, dict):
+        slots=[]
+        print "TypedMeta::__new__.cls=%s,name=%s" % (cls,name)
+        for key, value in dict.items():
+            if isinstance(value, TypedProperty):
+                value.name = "_"+key  #bind the memeber variabls's name to the  the descriptor 
+                slots.append(value.name)
+        dict['__slots__']=slots
+        return type.__new__(cls,name,bases,dict)
+class Typed:
+    __metaclass__ = TypedMeta
+
+class Foo(Typed):
+    name = TypedProperty(str)
+    num =  TypedProperty(int,42)
+f=Foo()
+f.num #output self.name _num, 42
+f._num # AttributeError: _num; _num doesn't exist, not yet. 
+f.num=44 # the descriptor's __set__ method is called which creates a new field _num
+f._num  #44, now _num exists after a call to f.num
+#+END_SRC
+
+* Scoping Rules and Closure
+  + Variables in nested Functions are bound using /lexical scoping/. That is, names are resolved by first checking the local scope and then all enclosing scopres of the outer function definition from the innermost scope to the outermost scope. If no match is found, the global and built-in namespace are checked. Although names in enclosing scopes are accessible. Python 2 only allows variables to be reassigned in the innermost scope(local variables) and the global namespace(using global). Python 3 allows this by using nonlocal. 
+
+  #+BEGIN_SRC python
+  def countdown(n):
+     def next():
+       nonlocal n #only valid in python 3
+       r=n
+       n -= 1
+       print "r=",r
+     return next
+  #in python 2.x , we can use list and dictionary to workaround. 
+  def countdown(n):
+    l=[n]
+    def next():
+       r=l
+       r[0] -= 1
+       print "r=",r
+    return next
+  #+END_SRC
+  + When the statements that make up a function are packaged together with the environment in which they execute, the resulting object is known as closure. One use of closure is for lazy/delayed evaluation. Using this closure pattern is faster than using a class to capture the variables. 
+  #+BEGIN_SRC python
+  from urlib.request import urlopen(Python3)
+  def page(url):
+      def get():
+	      return urlopen(url).read()
+      return get
+  python = page("http://www.python.org")
+  >>> python 
+  <function get at 0x95d5f0>
+  jython = page("http://www.jython.org")
+  >>> jython
+  <function get at 0x9735f0>
+  # the clousre is captured in the function object 
+  python.__closure__[0].cell_contents
+  'http://www.python.org'
+  jython.__clousre__[0].cell_contents
+  'http://www.jython.org'
+  #+END_SRC
+
+* Being Pythonic
+** double asterisk
+The double asterisk can be used in defining kwargs as well as passing a dict as arguments: 
+#+BEGIN_SRC python 
+args=dict(A=1, B=2);
+setup(**args) ##equivalent to passing in A=1, B=2
+#+END_SRC 
+
+* Using Python for Text Parsing 
