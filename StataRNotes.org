@@ -58,51 +58,9 @@ options(width=160)
 > ls()
 [1] "ds"        "subds"     "subds_win" "subds.win" "x"         "y" 
 #+END_SRC
-
-** Exploratory 
-*** Summary of data
-#+BEGIN_SRC R
-ds <- read.csv("/workplace/shiyuang/b/data/BuyBoxWinner_1_147_small.csv", header=T)
-summary(ds)
-head(ds, 5)
-ds[1:3,]
-#+END_SRC
-#+BEGIN_SRC R
-> str(ds)
-'data.frame':	1670108 obs. of  18 variables:
- $ marketplace_id  : int  1 1 1 1 1 1 1 1 1 1 ...
- $ asin            : Factor w/ 130370 levels "016642966X","0594451647",..: 117654 57879 76524 2642 54769 58339 93358 27560 99535 87557 ...
- $ gl_product_group: int  147 147 147 147 147 147 147 147 147 147 ...
- $ dummy_fast_track: int  1 1 1 0 1 1 1 0 1 0 ...
- $ dummy_fba       : int  1 0 0 0 1 1 0 0 1 0 ...
- $ dummy_prime     : int  0 1 1 0 0 1 0 0 0 0 ...
- $ dummy_amazon    : int  0 1 1 0 0 0 1 0 0 0 ...
- $ dummy_buybox_win: int  0 0 0 0 0 0 0 0 0 0 ...
- $ dummy_purchase  : int  0 0 0 0 0 0 0 0 0 0 ...
- $ landedPrice     : num  299.39 21.99 248 46.68 7.95 ...
- $ hit_day         : int  20131024 20131027 20131020 20131015 20131024 20131030 20131103 20131027 20131030 20131015 ...
- $ dummy_win       : int  0 0 0 0 0 0 0 0 0 0 ...
- $ dummy_mfn       : int  0 0 0 1 0 0 0 1 0 1 ...
- $ dummy_afn       : int  1 1 1 0 1 1 1 0 1 0 ...
- $ aid_day         : Factor w/ 662043 levels "016642966X20131001",..: 613647 293778 394578 11885 276519 296153 485552 134543 514912 454785 ...
- $ priceBandToUse  : int  8 3 8 5 1 3 0 5 2 10 ...
- $ seller_rating   : num  1.05 1.1 1.1 1.03 1.06 ...
- $ is_prime_offer  : int  1 1 1 0 0 1 1 0 1 0 ...
-#+END_SRC
-*** extracting Rows
-#+BEGIN_SRC r
-dim(ds[ds$dummy_win == 0,]) 
-#+END_SRC 
-** Plotting
-#+BEGIN_SRC r 
-with(subds, plot(as.numeric(is_prime_offer), landedPrice, col=dummy_win, pch=as.numeric(dummy_win)))
-boxplot(data=subds, pPO~sample_rate)
-dev.copy(png, "~/tmp/tmp.png") #export the graph
-dev.off() #save the graph 
-#+END_SRC
-** attach/detach dataframe: 
+*** attach/detach dataframe: 
 attach()/detach() will add a dataframe to the search path. 
-#+BEGIN_SRC 
+#+BEGIN_SRC R
 > search()
 [1] ".GlobalEnv"        "package:stats"     "package:graphics"  "package:grDevices" "package:utils"     "package:datasets"  "package:methods"  
 [8] "Autoloads"         "package:base"     
@@ -114,4 +72,59 @@ attach()/detach() will add a dataframe to the search path.
 > search()
 [1] ".GlobalEnv"        "package:stats"     "package:graphics"  "package:grDevices" "package:utils"     "package:datasets"  "package:methods"  
 [8] "Autoloads"         "package:base"   
+#+END_SRC
+** Exploratory 
+*** Summary of data
+#+BEGIN_SRC R
+ds <- read.csv("/workplace/shiyuang/b/data/BuyBoxWinner_1_147_small.csv", header=T)
+names(ds)
+summary(ds)
+head(ds, 5)
+str(ds)  #show structure
+ds[1:3,]
+#+END_SRC
+*** extracting Rows//
+#+BEGIN_SRC r
+dim(ds[ds$dummy_win == 0,])
+ds.top[ds.top$asin=="B003ES5ZSW",!(names(ds.top) %in% c("count","sum_dummy_win")) #excluding cols 
+#+END_SRC
+*** Grouping 
+#+BEGIN_SRC R
+aggregate(data=ds, j~priceBand+sample_rate, FUN=length)
+#+END_SRC
+
+** Plotting
+#+BEGIN_SRC r 
+with(subds, plot(as.numeric(is_prime_offer), landedPrice, col=dummy_win, pch=as.numeric(dummy_win)))
+boxplot(data=subds, pPO~sample_rate)
+dev.copy(png, "~/tmp/tmp.png") #export the graph
+dev.off() #save the graph 
+#+END_SRC
+
+** dplyr 
+#+BEGIN_SRC R
+library(dplyr)
+ds.top<-merge(ds, ds.aid, by="aid_day") #inner join
+ds.top %>% group_by(asin) %>% summarise(count=n(),total_bb=sum(dummy_win)) %>% arrange(-count) %>% head(10)
+unique(ds.top[ds.top$asin=="B003ES5ZSW",!(names(ds.top) %in% c("count","sum_dummy_win"))]) %>% head(5) 
+#+END_SRC
+** Mixed/Fixed effect, lfe/lme4
+#+BEGIN_SRC R
+## from library(lfe), analogue to Stata:areg
+m1<-felm(dummy_win ~ landedPrice+is_prime_offer+dummy_fast_track|aid_day, data=ds.train)
+
+library(lme4)
+hdp <- read.csv("http://www.ats.ucla.edu/stat/data/hdp.csv")
+hdp <- within(hdp, {
+  Married <- factor(Married, levels = 0:1, labels = c("no", "yes"))
+  DID <- factor(DID)
+  HID <- factor(HID)
+})
+(fm1 <- lmer(Reaction ~ Days+ (Days| Subject), sleepstudy)) # Same as (fm1 <- lmer(Reaction ~ Days + 1 + (Days+1| Subject), sleepstudy))
+(fm2 <- lmer(Reaction ~ Days+ (1| Subject), sleepstudy)) #consider the random effect only on intercept, not on Days' coeff. 
+fm3 <- glmer(remission ~ IL6 + CRP + CancerStage + LengthofStay + Experience +
+    (1 | DID), data = hdp, family = binomial, control = glmerControl(optimizer = "bobyqa"),
+    nAGQ = 10)
+print(m, corr = FALSE)
+fixef(m)
 #+END_SRC
