@@ -1,3 +1,5 @@
+#+BLOG: wordpress
+#+POSTID: 106
 -----------------------
 #+TITLE: ShellScript
 #+DATE: <2014-12-23 Tue>
@@ -128,9 +130,11 @@ Sometimes we think in terms of word and want the match for the whole word. In th
    cat file.txt|sed -e 's/\t/,/g;s/,,/, ,/g'|column -s, -t|less -#5 -S
    #+END_SRC
    The sed command 's/\t/,/g' replace tab with comma and 's/,,/, ,/g' fills in the missing field with a space. Note that without the fill-in step, the alignment is wrong. 
-* Footnotes
-
-[fn:1] 
+** /awk/
+*** Randomly Sample 1/1000 row. 
+#+BEGIN_SRC bash
+cat infile.txt | awk 'BEGIN {srand()} !/^$/ { if (rand() <= .001) print $0}' > outfile.txt
+#+END_SRC
 * Footnotes
 
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]

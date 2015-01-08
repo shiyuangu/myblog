@@ -94,14 +94,85 @@ aggregate(data=ds, j~priceBand+sample_rate, FUN=length)
 #+END_SRC
 
 ** Plotting
+*** simple boxplot/export
 #+BEGIN_SRC r 
 with(subds, plot(as.numeric(is_prime_offer), landedPrice, col=dummy_win, pch=as.numeric(dummy_win)))
 boxplot(data=subds, pPO~sample_rate)
+title("My Title")
 dev.copy(png, "~/tmp/tmp.png") #export the graph
 dev.off() #save the graph 
 #+END_SRC
+*** multi-boxplot
+#+BEGIN_SRC R
+  library(ggplot2)
+  library(grid)
+  # Multiple plot function
+  # This function is taken from Cookbook for R
+  # ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+  # - cols:   Number of columns in layout
+  # - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+  #
+  # If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+  # then plot 1 will go in the upper left, 2 will go in the upper right, and
+  # 3 will go all the way across the bottom.
+  #
+  multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+    require(grid)
 
-** dplyr 
+    # Make a list from the ... arguments and plotlist
+    plots <- c(list(...), plotlist)
+
+    numPlots = length(plots)
+
+    # If layout is NULL, then use 'cols' to determine layout
+    if (is.null(layout)) {
+      # Make the panel
+      # ncol: Number of columns of plots
+      # nrow: Number of rows needed, calculated from # of cols
+      layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                      ncol = cols, nrow = ceiling(numPlots/cols))
+    }
+
+   if (numPlots==1) {
+      print(plots[[1]])
+
+    } else {
+      # Set up the page
+      grid.newpage()
+      pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+      # Make each plot, in the correct location
+      for (i in 1:numPlots) {
+        # Get the i,j matrix positions of the regions that contain this subplot
+        matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+        print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+             layout.pos.col = matchidx$col))
+      }
+    }
+  }
+
+  # plotting
+  ds<-read.csv(file="/Users/shiyuang/tmp/20141222/stata-estimates.csv", header=T)
+  ds$priceBand <- as.factor(ds$priceBand)
+  ds$sample_rate <- as.factor(ds$sample_rate)
+  ds$pPO <- - ds$bPO/ds$a
+  #ds$pSR <- - ds$bSR/ds$a
+  ds$pFT <- - ds$bFT/ds$a
+  for (i in seq(0, 11, by=1)){
+      subds<-ds[ds$priceBand==i,]
+      a <- ggplot(data=subds)+geom_boxplot(aes(x=sample_rate,y=a))+ggtitle("Price Coeff.")
+      gpPO <- ggplot(data=subds)+geom_boxplot(aes(x=sample_rate,y=pPO))+ggtitle("Premia PO")
+      #gpSR <- ggplot(data=subds)+geom_boxplot(aes(x=sample_rate,y=pSR))+ggtitle("Premia SR")
+      gpFT <- ggplot(data=subds)+geom_boxplot(aes(x=sample_rate,y=pFT))+ggtitle("Premia FT")
+      #multiplot(a,gpPO,gpSR,gpFT,cols=4)
+      multiplot(a,gpPO,gpFT,cols=3)
+      dev.copy(png, paste(paste("~/tmp/20141222/pb",i,sep="_"),"png",sep="."),width=1280,height=480)
+      dev.off()
+  }
+#+END_SRC
+
+** dplyr:A Grammar of Data Manipulation 
 #+BEGIN_SRC R
 library(dplyr)
 ds.top<-merge(ds, ds.aid, by="aid_day") #inner join

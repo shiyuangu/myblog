@@ -64,3 +64,7 @@ contextual information."
 ;;;; Planning
 
 #+END_SRC
+* Greedy vs. NonGreedy
++ Example: 
+Want to change a printout to a csv format,  "X:4: pPO/pFT:4.323131" to  "4, 4.323131"
+run command C-M-% for "X:\(.*?\):" to "\1," then delete "pPO/pFT"
