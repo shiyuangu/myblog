@@ -10,13 +10,15 @@
 ** Environment 
 #+BEGIN_SRC stata
 //save history along with output
-log using ".SHistory", append text
+. log using ".SHistory", append text
+//list the 50 most recent command 
+. #review 50 
 #+END_SRC
 
 ** Exploratory Analysis
 #+BEGIN_SRC stata
 . use /b/data/BuyBoxWinner_1_147_all.dta, clear
-. desc
+. desc, fullname
 
 Contains data from /b/data/BuyBoxWinner_1_147_all.dta
   obs:     1,670,108                          
@@ -31,6 +33,7 @@ asin            str10   %10s
 gl_product_gr~p int     %8.0g          
 . sample 10
 . summ landedPrice if (priceBandToUse == 1) ,d
+. list in 1/10
 #+END_SRC
 ** Importing/Exporting
 #+BEGIN_SRC stata
