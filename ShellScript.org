@@ -8,9 +8,12 @@
 * Flow Control 
 #+BEGIN_SRC shell
 for i in {1..12};do
-   scp -i ~/tmp/tmp_pem hadoop@ec2-54-174-87-98.compute-1.amazonaws.com://mnt/data/BuyBoxWinner_1_147_pb_$i.Rda .
-done2
+   scp -i ~/tmp/tmp_pem hadoop@ec2host.com://path/to/file_${i}.Rda .
+done
+# or in one line
+or i in {1..12}; do; scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}.Rda . ;scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}_train.Rda . ; scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file2_${i}.Rda . ; done
 #+END_SRC
+
 * Piping
 + Piping with stdin redirection. Without the stdin redirection, emacs complains the stdin is not tty. The "$@" is a [[http://unixhelp.ed.ac.uk/scrpt/scrpt2.2.2.html][Special Shell Variables]] which is a string containing all arguments to the shell 
   #+BEGIN_SRC shell

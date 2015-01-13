@@ -50,16 +50,16 @@ gl_product_gr~p int     %8.0g
 * R
 ** Getting Help
 + help(func)
-** Environment, 
+** Environment,
 *** Change #col to display
 The default width is 80 characters. We can change it to 160 characters by
 #+BEGIN_SRC R
-options(width=160)
+> options(width=160)
 #+END_SRC
-*** list all objects in the environment 
+*** show environment 
 #+BEGIN_SRC r
-> ls()
-[1] "ds"        "subds"     "subds_win" "subds.win" "x"         "y" 
+> options() #list all options
+> ls() #list all objects
 #+END_SRC
 *** attach/detach dataframe: 
 attach()/detach() will add a dataframe to the search path. 
@@ -75,6 +75,10 @@ attach()/detach() will add a dataframe to the search path.
 > search()
 [1] ".GlobalEnv"        "package:stats"     "package:graphics"  "package:grDevices" "package:utils"     "package:datasets"  "package:methods"  
 [8] "Autoloads"         "package:base"   
+#+END_SRC
+*** history
+#+BEGIN_SRC R
+  history(max.show=Inf)
 #+END_SRC
 ** Exploratory 
 *** Summary of data
@@ -195,7 +199,9 @@ hdp <- within(hdp, {
   HID <- factor(HID)
 })
 (fm1 <- lmer(Reaction ~ Days+ (Days| Subject), sleepstudy)) # Same as (fm1 <- lmer(Reaction ~ Days + 1 + (Days+1| Subject), sleepstudy))
+
 (fm2 <- lmer(Reaction ~ Days+ (1| Subject), sleepstudy)) #consider the random effect only on intercept, not on Days' coeff. 
+(fm3 <- lmer(Reaction ~ Days + (Days +1 ||Subject), sleepstudy)) ## || indicate no interaction between Days and intercept; Alternatively, the formula (Days+1||Subject), can also be writtern as  Reaction ~ Days + ((1 | Subject) + (0 + Days | Subject)) (ref summary(fm1))
 fm3 <- glmer(remission ~ IL6 + CRP + CancerStage + LengthofStay + Experience +
     (1 | DID), data = hdp, family = binomial, control = glmerControl(optimizer = "bobyqa"),
     nAGQ = 10)

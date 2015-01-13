@@ -19,7 +19,7 @@ I modified org2blg to use a customized export backend ([[https://bitbucket.org/s
    | / | <>                        | <>    | <>                                      |
    |---+---------------------------+-------+-----------------------------------------|
    | # | post buffer as draft      | C-c d | M-x org2blog/wp-post-buffer             |
-   | # | publish buffer            | C-c p | C-u M-x org2blog/wp-post-buffer         |
+   | # | publish buffer            | C-c p | M-x org2blog/wp-post-buffer-and-publish |
    | # | post buffer as page draft | C-c D | M-x org2blog/wp-post-buffer-as-page     |
    | # | publish buffer as page    | C-c P | C-u M-x org2blog/wp-post-buffer-as-page |
    |---+---------------------------+-------+-----------------------------------------|
