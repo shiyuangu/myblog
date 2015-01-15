@@ -44,13 +44,15 @@ or i in {1..12}; do; scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
 ** rsync
 + Rsync between remote and local through ssh 
 #+BEGIN_SRC shell 
-rsync -avzhe ssh --progress shiyuang@shiyuang.desktop.amazon.com://workplace/shiyuang/PremiaEstimation .
+rsync -avzhe ssh --progress shiyuang@shiyuang.desktop.amazon.com://path/to/dir .
+rsync -avzhe "ssh -i /full/path/to/pem" --progress localdir user@ec2host.amazonaws.com://mnt/
 #+END_SRC
 -a: archive
 -v: verbose
 -z: compress file data during transfer
 -h: human readable info
--e ssh: connect through ssh 
+-e ssh: connect through ssh(Use full path in -i) 
+  
 
 ** /sed/ 
 *** Features 
