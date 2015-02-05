@@ -11,7 +11,7 @@ for i in {1..12};do
    scp -i ~/tmp/tmp_pem hadoop@ec2host.com://path/to/file_${i}.Rda .
 done
 # or in one line
-or i in {1..12}; do; scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}.Rda . ;scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}_train.Rda . ; scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file2_${i}.Rda . ; done
+for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}.Rda . ;scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}_train.Rda . ; scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file2_${i}.Rda . ; done
 #+END_SRC
 
 * Piping
@@ -140,6 +140,13 @@ Sometimes we think in terms of word and want the match for the whole word. In th
 #+BEGIN_SRC bash
 awk 'BEGIN {srand()} !/^$/ { if (rand() <= .001) print $0}' infile.txt> outfile.txt 
 awk 'BEGIN {srand()} !/^$/ { if (rand() <= .01 || FNR==1) print $0}' infile.txt> outfile.txt #include header. 
+#+END_SRC
+*** Exact a field and numeric comparison
+#+BEGIN_SRC bash
+## The following awk command extracts the lines with pval less than 0.05 from a csv file
+## Sample line: 20150204,21,R,cp, All, 1, NTrig, pval,.04
+## -F specifies field separator $0 is the whole line, $8,$9 is the eighth and ninth field. 
+awk -F, '$8==" pval" && $9<0.05 {print $0}' inputfile.csv
 #+END_SRC
 * Footnotes
 

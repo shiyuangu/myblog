@@ -34,6 +34,7 @@ gl_product_gr~p int     %8.0g
 . sample 10
 . summ landedPrice if (priceBandToUse == 1) ,d
 . list in 1/10
+. tab A1 A2, row col //tabulate two ways.  
 #+END_SRC
 ** Importing/Exporting
 #+BEGIN_SRC stata
@@ -50,7 +51,7 @@ gl_product_gr~p int     %8.0g
 * R
 ** Getting Help
 + help(func)
-** Environment,
+** Environment
 *** Change #col to display
 The default width is 80 characters. We can change it to 160 characters by
 #+BEGIN_SRC R
@@ -97,7 +98,8 @@ ds.top[ds.top$asin=="B003ES5ZSW",!(names(ds.top) %in% c("count","sum_dummy_win")
 #+END_SRC
 *** Grouping 
 #+BEGIN_SRC R
-aggregate(data=ds, j~priceBand+sample_rate, FUN=length)
+# The following calculates the the number of observations for each pair (priceBand, sample_rate)    
+aggregate(data=ds, j~priceBand+sample_rate, FUN=length) 
 #+END_SRC
 
 ** Plotting
@@ -108,6 +110,21 @@ boxplot(data=subds, pPO~sample_rate)
 title("My Title")
 dev.copy(png, "~/tmp/tmp.png") #export the graph
 dev.off() #save the graph 
+#+END_SRC
+*** combining plots/zoom in
+#+BEGIN_SRC R
+p <- ggplot()+geom_density(aes(x=offer_price),na.rm=TRUE)+coord_cartesian(xlim=c(10,2000))+facet_grid
+#+END_SRC
+#+BEGIN_SRC R
+p <- ggplot()+geom_density(data=ds.retail.trig[t1==0,],aes(x=offer_price),na.rm=TRUE,color="blue")+coord_cartesian(xlim=c(10,2000))+geom_density(data=ds.retail.trig[t1==1,],aes(x=offer_price),na.rm=TRUE,color="red")+coord_cartesian(xlim=c(10,2000))
+#+END_SRC
+#+BEGIN_SRC R
+attach(mtcars)
+par(mfrow=c(2,2))
+plot(wt,mpg, main="Scatterplot of wt vs. mpg")
+plot(wt,disp, main="Scatterplot of wt vs disp")
+hist(wt, main="Histogram of wt")
+boxplot(wt, main="Boxplot of wt")
 #+END_SRC
 *** multi-boxplot
 #+BEGIN_SRC R
@@ -185,6 +202,12 @@ library(dplyr)
 ds.top<-merge(ds, ds.aid, by="aid_day") #inner join
 ds.top %>% group_by(asin) %>% summarise(count=n(),total_bb=sum(dummy_win)) %>% arrange(-count) %>% head(10)
 unique(ds.top[ds.top$asin=="B003ES5ZSW",!(names(ds.top) %in% c("count","sum_dummy_win"))]) %>% head(5) 
+#+END_SRC
+** Simple linear regression
+#+BEGIN_SRC r
+> mymodel = lm(y~x, ds)
+> summary(mymodel)
+> confint(mymodel, level=0.95)
 #+END_SRC
 ** Mixed/Fixed effect, lfe/lme4
 #+BEGIN_SRC R
