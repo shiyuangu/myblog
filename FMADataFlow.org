@@ -1,0 +1,14 @@
+* Knowledge Base:
++ parallel copy in EMR is done by internal tool in s3copy.sh
+#+BEGIN_SRC python
+argString = ""
+for pair in srcDestPairs:
+    argString = argString      +       \
+        " --src %s"  % pair[0] +       \
+        " --dest %s" % pair[1]
+
+# make the call
+# for copies to local FS, set distCopy to false. Then it will work as intended even
+# with wildcards
+os.system('HADOOP_OPTS="-Djava.io.tmpdir=/fma" hadoop jar lib/CIVEMRCommon-1.0-standalone.jar com.amazon.consumerinstockvalue.common.ipclab.emr.tasks.CopyS3FilesTask --distCopy %s --awsCredentialsName %s --s3SymmetricKeyName %s --conf mapred.task.timeout=9999999999 --args %s' % (distCopy, awsCredentialsName, s3SymmetricKeyName, argString))
+#+END_SRC

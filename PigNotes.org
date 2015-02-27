@@ -1,0 +1,42 @@
+* Examples 
+** NULL
+** Tips
++ PIGGY_BANK is a jar file and we would like to see what classes a jar file provides:
+we can just do 'unzip -l file.jar'; we can use the JDK utility to peek the function signature: 
+#+BEGIN_SRC shell
+javap -classpath datafu-1.1.0.jar datafu.pig.stats.Quantile
+#+END_SRC 
+** foreach 
+#+BEGIN_SRC pig
+X = FOREACH A GENERATE *;
+
+DUMP X;
+(1,2,3)
+(4,2,1)
+(8,3,4)
+(4,3,3)
+(7,2,5)
+(8,4,3)
+#+END_SRC
+
+#+BEGIN_SRC pig 
+X = FOREACH A GENERATE a1+a2 AS f1:int;
+
+DESCRIBE X;
+x: {f1: int}
+
+DUMP X;
+(3)
+(6)
+(11)
+(7)
+(9)
+(12)
+
+Y = FILTER X BY f1 > 10;
+
+DUMP Y;
+(11)
+(12)
+#+END_SRC
+

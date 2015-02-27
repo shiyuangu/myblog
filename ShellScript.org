@@ -148,6 +148,23 @@ awk 'BEGIN {srand()} !/^$/ { if (rand() <= .01 || FNR==1) print $0}' infile.txt>
 ## -F specifies field separator $0 is the whole line, $8,$9 is the eighth and ninth field. 
 awk -F, '$8==" pval" && $9<0.05 {print $0}' inputfile.csv
 #+END_SRC
+*** Concatenate files with same header
+#+BEGIN_SRC bash
+## concatenate csv files with the header stripped-off except the first file. 
+## FNR==1 && NR!=1: match the first line of a line except it's also the first line across all files(NR==1)
+## getline: skip the line. 
+## 1{print}: print everything except the lines previous skipped  
+> awk '
+FNR==1 && NR!=1 {getline;} 
+1{print}
+' input-blob*.csv > input-all.csv
+
+## A more sophisticated example: the header spreads multiple line. 
+> awk '
+FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the <header> tags
+1{print}
+' input-blob*.csv > input-all.csv
+#+END_SRC
 * Footnotes
 
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]
