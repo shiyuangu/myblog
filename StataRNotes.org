@@ -81,7 +81,13 @@ attach()/detach() will add a dataframe to the search path.
 #+BEGIN_SRC R
   history(max.show=Inf)
 #+END_SRC
-** Exploratory 
+** Data Type
+*** vector 
+**** find indices
+#+BEGIN_SRC R
+  which(ds.filter[,"ToUse"] %in% c(2)) ##find the row indices where the column "ToUse" equals to 2
+#+END_SRC
+** Data Analysis 
 *** Summary of data
 #+BEGIN_SRC R
 ds <- read.csv("/workplace/shiyuang/b/data/BuyBoxWinner_1_147_small.csv", header=T)
@@ -91,10 +97,15 @@ head(ds, 5)
 str(ds)  #show structure
 ds[1:3,]
 #+END_SRC
-*** extracting Rows//
+*** Extracting rows/columns
 #+BEGIN_SRC r
 dim(ds[ds$dummy_win == 0,])
 ds.top[ds.top$asin=="B003ES5ZSW",!(names(ds.top) %in% c("count","sum_dummy_win")) #excluding cols 
+#+END_SRC
+*** Combining rows/columns
+#+BEGIN_SRC R
+cbind(ds1,ds2)
+cbind(v1,X=v2) #combine columns, appending "X" to the v2's columns' name)
 #+END_SRC
 *** Grouping 
 #+BEGIN_SRC R

@@ -36,8 +36,8 @@
 	    print "in %s" % (__name__,) 
    #+END_SRC
 * OOP:
-  + Unlike C++/Java, Base class _init_() is not automatically invoked:
-  #+BEGIN_SRC python
+ + Unlike C++/Java, Base class _init_() is not automatically invoked:
+ #+BEGIN_SRC python
         class Base(object):
             def __init__(self):
                 print "In Base::init"
@@ -51,8 +51,8 @@
         obj = Derived()
         obj.myprint()   #error AttributeError: 'Derived' object has no attribute 'a'
 
-  #+END_SRC
- + In Python, the instance's attribute can be deleted.
+ #+END_SRC
++ In Python, the instance's attribute can be deleted.
  #+BEGIN_SRC python 
    class MyObject:
        """
