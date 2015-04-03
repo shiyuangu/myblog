@@ -51,6 +51,7 @@ gl_product_gr~p int     %8.0g
 * R
 ** Getting Help
 + help(func)
++ getAnywhere(obj) 
 ** Environment
 *** Change #col to display
 The default width is 80 characters. We can change it to 160 characters by
