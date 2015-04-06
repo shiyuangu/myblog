@@ -52,7 +52,12 @@ gl_product_gr~p int     %8.0g
 ** Getting Help
 + help(func)
 + getAnywhere(obj) 
++ help("[[")
++ help.start(): 
+This will launch a Web browser that allows the help pages to be browsed with hyperlinks(it only uses localhost: http://127.0.0.1:21389/doc/html/Search.html).This link Search Engine & Keywords is particularly useful. We can also use the internet link http://stat.ethz.ch/R-manual/R-devel/doc/html/. The local host and the internet link should be the same. 
++ help.search() (alternative ??, eg, ??solve) 
 ** Environment
+R saves the workplace object to the current directory .RData and the command history to .Rhistroy 
 *** Change #col to display
 The default width is 80 characters. We can change it to 160 characters by
 #+BEGIN_SRC R
@@ -62,6 +67,7 @@ The default width is 80 characters. We can change it to 160 characters by
 #+BEGIN_SRC r
 > options() #list all options
 > ls() #list all objects
+> objects() #remove objects in the workspace
 #+END_SRC
 *** attach/detach dataframe: 
 attach()/detach() will add a dataframe to the search path. 
@@ -82,6 +88,14 @@ attach()/detach() will add a dataframe to the search path.
 #+BEGIN_SRC R
   history(max.show=Inf)
 #+END_SRC
+*** Executing Commands: 
+   #+BEGIN_SRC R 
+      ## execute a script 
+      source("commands.R")
+      ## Redirecting output
+      sink("record.lis")
+   #+END_SRC
+   
 ** Data Type
 *** vector 
 **** find indices
