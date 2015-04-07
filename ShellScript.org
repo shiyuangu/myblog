@@ -28,7 +28,7 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
     find / -name core -exec /bin/rm -f '{}' +
     find / -name core | xargs /bin/rm -f
   #+END_SRC
-    - The ‑exec is followed by some shell command line, ended with a semicolon (“;”). (The semicolon must be quoted from the shell, so find can see it!)  Within that command line, the word “{}” will expand out to the name of the found file. An alternate form of ‑exec ends with a plus-sign, not a semi-colon.  This form collects the filenames into groups or sets, and runs the command once per set.  (This is exactly what xargs does, to prevent argument lists from becoming too long for the system to handle.)[fn:2]
+    - There are two forms of -exec;. The form ‑exec {} \; (The semicolon must be quoted from the shell, so find can see it!)  With the -exec{} \; the word “{}” will expand out to the name of the found file, the semicolon means the command runs for each match file;. An alternate of the semicolon is  a plus-sign +. This form runs the command once for all files    (xargs[fn:4],  which together with "-L" options, gives more flexibility of how to group the arguments into sets)[fn:3] [fn:2]
     + To handle exotic filenames(which contain spaces or newlines), use the form "find .. -print0|xargs -0 ..."
 
 + Gotcha: When no action is given, "-print" is assumed and grouping is perform. This could messed up the boolean operation precedence and give surprising results. See [fn:2].  
@@ -170,6 +170,10 @@ FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]
 
 [fn:2] [[http://content.hccfl.edu/pollock/unix/findcmd.htm][A Unix/Linux find command Tutorial]]
+
+[fn:3] man find
+
+[fn:4] man xargs
 
 
  

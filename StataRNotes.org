@@ -257,3 +257,8 @@ fm3 <- glmer(remission ~ IL6 + CRP + CancerStage + LengthofStay + Experience +
 print(m, corr = FALSE)
 fixef(m)
 #+END_SRC
+** Advanced R
+*** Construct Syntax on the Fly
+#+BEGIN_SRC R
+
+#+END_SRC
