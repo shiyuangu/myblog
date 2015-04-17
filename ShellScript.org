@@ -165,6 +165,15 @@ FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the
 1{print}
 ' input-blob*.csv > input-all.csv
 #+END_SRC
+** /paste/
+*** Concatenate files columnwise  
+#+BEGIN_SRC zsh
+## The following command combines three files by columns and select the 1st, 2nd, 4th field. 
+### "-d," inserts comma to separate between files so that the result is also a csv file
+### "-F," in awk specifies the field delimiter
+### "-v OFS=','" inserts comma between fields on output
+paste -d, file1.csv, file2.csv, file2.csv|awk -F, -v OFS=',' '{print $1,$2, $4}'
+#+END_SRC
 * Footnotes
 
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]
