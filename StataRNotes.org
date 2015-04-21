@@ -260,5 +260,12 @@ fixef(m)
 ** Advanced R
 *** Construct Syntax on the Fly
 #+BEGIN_SRC R
-
+> targetName <- "OneFactorScore"
+> eval(substitute(y.test <- ds.test$targetName,list(targetName=targetName)))
+#+END_SRC
+*** Constructing Formulae 
+#+BEGIN_SRC r
+#y ~ the first ten columns of datafram ds
+lr.formula <- reformulate(names(ds)[1:10], “y”)  
+glm.fit <- glm(lr.formula, data=ds, family=binomial)
 #+END_SRC
