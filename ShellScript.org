@@ -20,7 +20,7 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
   ls prod_JP*|xargs zsh -c 'emacs "$@"</dev/tty'
   #+END_SRC
 * Utilities
-** find (Cf. [fn:2]):
+** /find/ (Cf. [fn:2]):
 + -exec 
   #+BEGIN_SRC shell
     #The following commands do the same things: 
@@ -32,7 +32,7 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
     + To handle exotic filenames(which contain spaces or newlines), use the form "find .. -print0|xargs -0 ..."
 
 + Gotcha: When no action is given, "-print" is assumed and grouping is perform. This could messed up the boolean operation precedence and give surprising results. See [fn:2].  
-** tar
+** /tar/
 + Archive and gzip a whole directory:  
 #+BEGIN_SRC shell
   tar czvf ShiyuanGu.tar.gz ShiyuanGu  
@@ -41,11 +41,12 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
 #+BEGIN_SRC shell
   tar xzvf ShiyuanGu.tar.gz ShiyuanGu  
 #+END_SRC
-** rsync
+** /rsync/
 + Rsync between remote and local through ssh 
 #+BEGIN_SRC shell 
 rsync -avzhe ssh --progress shiyuang@shiyuang.desktop.amazon.com://path/to/dir .
 rsync -avzhe "ssh -i /full/path/to/pem" --progress localdir user@ec2host.amazonaws.com://mnt/
+rsync -avzhe "ssh" --progress  cambia/ algorithm:cambia/ ## assume we have set up the host alias and id file in .ssh/config
 #+END_SRC
 -a: archive
 -v: verbose
@@ -53,7 +54,23 @@ rsync -avzhe "ssh -i /full/path/to/pem" --progress localdir user@ec2host.amazona
 -h: human readable info
 -e ssh: connect through ssh(Use full path in -i) 
   
-
+** /screen/
++ Name session: screen -S myname
++ Scroll back: C-a-Esc to enter copy mode, then navigate in a vi-like manner [[http://www.linuxscrew.com/2008/11/14/faq-how-to-scrollback-in-gnu-screen/]]:
+#+BEGIN_SRC 
+h -    Move the cursor left by one character
+j -    Move the cursor down by one line
+k -    Move the cursor up by one line
+l -    Move the cursor right by one character
+0 -    Move to the beginning of the current line
+$ -    Move to the end of the current line.
+G -    Moves to the specified line
+       (defaults to the end of the buffer).
+C-u -  Scrolls a half page up.
+C-b -  Scrolls a full page up.
+C-d -  Scrolls a half page down.
+C-f -  Scrolls the full page down.
+#+END_SRC
 ** /sed/ 
 *** Features 
  + Make only one pass over the inputs and hence more efficient. 
