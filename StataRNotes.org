@@ -102,6 +102,11 @@ attach()/detach() will add a dataframe to the search path.
 #+BEGIN_SRC R
   which(ds.filter[,"ToUse"] %in% c(2)) ##find the row indices where the column "ToUse" equals to 2
 #+END_SRC
+*** Factor 
+#+BEGIN_SRC R
+##Drop level after subsetting, say subds is obtained by subsetting, and some levels in subds$F are of zero counts after subsetting
+subds$F=factor(subds$F)
+#+END_SRC
 ** Data Analysis 
 *** Summary of data
 #+BEGIN_SRC R
@@ -111,6 +116,11 @@ summary(ds)
 head(ds, 5)
 str(ds)  #show structure
 ds[1:3,]
+cor(ds) #won't work if ds has factors. 
+corrplot.mix(cor(ds)) #visualize cor; library(corrplot)
+
+#quantile analysis 
+ds$QRev <- cut(ds$total_tkt_rev_yr1,breaks = quantile(ds$total_tkt_rev_yr1),include.lowest = TRUE,right=TRUE) 
 #+END_SRC
 *** Extracting rows/columns
 #+BEGIN_SRC r
@@ -127,15 +137,15 @@ cbind(v1,X=v2) #combine columns, appending "X" to the v2's columns' name)
 # The following calculates the the number of observations for each pair (priceBand, sample_rate)    
 aggregate(data=ds, j~priceBand+sample_rate, FUN=length) 
 #+END_SRC
-
+Cf. dplyr package for more sophisticated grouping
 ** Plotting
 *** simple boxplot/export
 #+BEGIN_SRC r 
 with(subds, plot(as.numeric(is_prime_offer), landedPrice, col=dummy_win, pch=as.numeric(dummy_win)))
 boxplot(data=subds, pPO~sample_rate)
 title("My Title")
-dev.copy(png, "~/tmp/tmp.png") #export the graph
-dev.off() #save the graph 
+dev.copy(png, "~/tmp/tmp.png") #export the graph; plot first then run this; otherwise, error of null device
+dev.off() #save the graph ; otherwise, error of file format. 
 #+END_SRC
 *** combining plots/zoom in
 #+BEGIN_SRC R
@@ -151,6 +161,12 @@ plot(wt,mpg, main="Scatterplot of wt vs. mpg")
 plot(wt,disp, main="Scatterplot of wt vs disp")
 hist(wt, main="Histogram of wt")
 boxplot(wt, main="Boxplot of wt")
+#+END_SRC
+*** Multiple line plot based on factors
+#+BEGIN_SRC R
+###The following plot a line for each ds$type using different colors
+ggplot(ds, aes(x=time, y=val, colour=type))+geom_line()+scale_x_continuous(breaks=seq(1,12,1))+xlab("Month")+ylab("Median gts13 score")
+
 #+END_SRC
 *** multi-boxplot
 #+BEGIN_SRC R
@@ -225,9 +241,12 @@ boxplot(wt, main="Boxplot of wt")
 ** dplyr:A Grammar of Data Manipulation 
 #+BEGIN_SRC R
 library(dplyr)
+options(dplyr.print_max = 1e9) # so that it prints all rows of tbl_df;sadly, there seems no easy way to print all columns. please cast  data.frame for printing all rows and columns: as.data.frame(ds.top)  
 ds.top<-merge(ds, ds.aid, by="aid_day") #inner join
 ds.top %>% group_by(asin) %>% summarise(count=n(),total_bb=sum(dummy_win)) %>% arrange(-count) %>% head(10)
 unique(ds.top[ds.top$asin=="B003ES5ZSW",!(names(ds.top) %in% c("count","sum_dummy_win"))]) %>% head(5) 
+#Note:
+arrange(ds, desc(total_bb)) #sort
 #+END_SRC
 ** Simple linear regression
 #+BEGIN_SRC r
