@@ -276,6 +276,7 @@ fm3 <- glmer(remission ~ IL6 + CRP + CancerStage + LengthofStay + Experience +
 print(m, corr = FALSE)
 fixef(m)
 #+END_SRC
+** 
 ** Advanced R
 *** Construct Syntax on the Fly
 #+BEGIN_SRC R
@@ -288,3 +289,11 @@ fixef(m)
 lr.formula <- reformulate(names(ds)[1:10], “y”)  
 glm.fit <- glm(lr.formula, data=ds, family=binomial)
 #+END_SRC
+*** extraction from a model 
+#+BEGIN_SRC R
+  lms <- regsubsets(target-var~., data=ds.pm,nv=30, method="forward")
+  model.id <- 1
+  lm.id <- lm(reformulate(names(coef(lms, model.id))[-1],"target-var") # -1: no need to include the intercept in names. 
+#+end_src
+
+	
