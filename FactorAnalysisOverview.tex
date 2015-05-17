@@ -1,0 +1,15 @@
+\documentclass{article}
+\usepackage{amsmath}
+\begin{document}
+\section{Appendix: Factor Analysis}
+{\it Factor Analysis} is a multivariate analysis method  which aims to capture variability of observed variables using lower number of unobserved variables called factors. Let $X$ be a $d$-dimensional random variable ({\it observed}) which can be decomposed into a sum of a linear combination of  $m$-dimensional ($m < d$) random variables $F$ and a $d$-dimensional {\bf uncorrelated} random variables $U$, that is, 
+\begin{equation}
+  \label{eq:fa1}
+  X = L\,F+U
+\end{equation}
+The matrix $L$ is of dimension $d\times m$ and is called {\it factor loadings}. The $m-$ dimensional random vector $F$ is called {\it common factors}. Common factors explain the correlations of $X$.  The random vector $U$ is called {\it specific factors}. Specific factors are uncorrelated and account for the variation specific to a particular dimension of $X$. Furthermore, the random vector $F$ and $U$ are assumed to be independent. Factor analysis is a  procedure which estimates the factor loadings $L$ from samples of $X$. We can further compute the {\it factor score} $F$ associated with the samples once we have the factor loadings $L$ (\cite{score}).  Given $X$, there is a inherent {\it indeterminacy} in the decomposition (\ref{eq:fa1}). Let $C$ be any $m\times m$ non-singular matrix, $\overset{\sim}{L}=L\,C$ and $\overset{\sim}{F}=C^{-1}\,F$. Then $\overset{\sim}{L}$, $\overset{\sim}{F}$ form another valid decomposition of (\ref{eq:fa1}).  In practice, an {\it extraction} procedure usually finds one solution $L$ which is then multiplied by some non-singular matrix $C$ that gives {\it simple structure} of the resulting $L\,C$. If $C$ is orthogonal matrix, the factors are said to be {\it orthogonal}, otherwise, {\it oblique}.  
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{FactorAnalysisOverview}
+\end{document}
+
