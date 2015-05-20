@@ -283,11 +283,18 @@ fixef(m)
 > targetName <- "OneFactorScore"
 > eval(substitute(y.test <- ds.test$targetName,list(targetName=targetName)))
 #+END_SRC
-*** Constructing Formulae 
+*** deparse: turn unevaluated expression into string
+#+BEGIN_SRC R
+< deparse(args(lm))
+
+#+END_SRC
+
+*** Constructing Formulae
 #+BEGIN_SRC r
 #y ~ the first ten columns of datafram ds
 lr.formula <- reformulate(names(ds)[1:10], “y”)  
 glm.fit <- glm(lr.formula, data=ds, family=binomial)
+
 #+END_SRC
 *** extraction from a model 
 #+BEGIN_SRC R
