@@ -36,7 +36,7 @@
 	    print "in %s" % (__name__,) 
    #+END_SRC
 * OOP:
- + Unlike C++/Java, Base class _init_() is not automatically invoked:
+** Unlike C++/Java, Base class _init_() is not automatically invoked:
  #+BEGIN_SRC python
         class Base(object):
             def __init__(self):
@@ -52,7 +52,7 @@
         obj.myprint()   #error AttributeError: 'Derived' object has no attribute 'a'
 
  #+END_SRC
-+ In Python, the instance's attribute can be deleted.
+** In Python, the instance's attribute can be deleted.
  #+BEGIN_SRC python 
    class MyObject:
        """
@@ -70,6 +70,7 @@
    del obj.b #correct. 
  #+END_SRC
 
+** The use of "@property": Uniform Access Principle. 
 * Type conversion
   Speicial Methods __int__(), __float__() ect. are called by explicit conversion such as int(x), float(x), but never called implicitly to perform type conversion during mix-type arithmetic. 
 
@@ -165,3 +166,113 @@ setup(**args) ##equivalent to passing in A=1, B=2
 #+END_SRC 
 
 * Using Python for Text Parsing 
+* NumPy
+** view vs copy 
+*** simply indexing return view and advance indexing returns copy 
+#+BEGIN_SRC python 
+ v2=v1[1:5]
+ v2[0] = 1.0 #v1[1] is also changed
+ v2 is v1[1:5] # return FALSE, the internal array is the same but meta data is not which make different identity See internal data structure for detail 
+#+END_SRC 
+** dtype-structured array
+#+BEGIN_SRC python1
+import numpy as np
+data=np.zeros((2,), dtype=[('A','i4'),('B','f4'),('C','a10')])
+data[:]=[(1,2.0,'Hello'),(2,3,'World')]
+#+END_SRC
+* Pandas
+** Data Structure: 
+*** Series
+**** ndarry-like: can be passed to most NumPy function. Slicing also slice the index
+**** dict-like, can set/get values by index label, like s['key']=val; However, unlike a python dict, if a label doesn't exist, an exception is raised. Note that dict-like insertion(with broadcasting) is ok with DataFrame, ie., df['new col']=val, df.loc[:,'C']=df.loc[:,'A'] can also perform enlargement. 
+**** automatic label alignment 
+#+BEGIN_SRC python
+s[1:]+s[:-1] # due to the automatic label aligment, the first and the last entry is NaN
+#+END_SRC
+**** A pandas.series  can be mix-typed; this usually happen when we select a row by DataFrame.loc[label] which gives a Series of dtype: object 
+#+BEGIN_SRC python
+d={'C1':pd.Series([1.,2.,3.]),
+   'C2':pd.Series(list('abc'))}
+df=pd.DataFrame(d)
+df.loc[0]
+C1    1
+C2    a
+Name: 0, dtype: object
+#+END_SRC
+*** Data Frame
+**** two axis: index(row labels, referred as df.index) and columns(column label,referred as df.columns)
+**** can be created from a dict or Series,  numpy structured array, a list of dicts, a dict of tuples(multi-indexed)
+#+BEGIN_SRC python
+d={'C1':Series([1.,2.,3.,], index=['a','b','c']),
+   'C2:'Series(...)}
+df=DataFrame(d)
+#+END_SRC
+**** If the data in DataFrame is numeric, elementwise numpy function and various other numpy functions can be used with no issues.
+**** There exists 3d(panel data in econometrics), 4d and nd dataframe.   
+** Index/Selection
+#+BEGIN_SRC python
+df['foo'] #get the columne 'foo'
+df.foo #column can be accessed like class attribute if the column name is a valid python variable name.
+df[df<0] #two dimension indexing; the resulting dataframe  has the same shape (still two dimensions in this cases) but the selected entries are NaN; In R, this logical indexing in two dimensions results in one dimension vector. 
+df.where(df>0, -df, inplace=TRUE) # ( replace negatives with its magnitudes. 
+df.mask(df>0) # replace the positive entries with NaN
+df.lookup([row1,row2],[col1,col2]) #return 1d numpy array with two entries (row1,col1),(row2,col2))
+df.select(lambda x: x=='A', axis=1) #keep the column 'A' only 
+#+END_SRC
+
+**** Three indexing methods: by label (.loc), by position(.iloc)  and advance indexing (.ix) 
+#+BEGIN_SRC python
+df.loc[row_idx, col_idx]
+panel.loc[item_idx, major_idx, minor_idx) #assume all for unspecified dim. 
+df[colnames] #([] correponds __getitem__, selecting low-dim slice 
+panel[itemnames]  
+#+END_SRC
+
+**** use at()/iat() methods for fast scalar value getting and setting([] is slow since it must handle a lot of cases) 
+**** Gotchas 
++ df.loc[start_idx:last_idx] includes the last index but df[start_idx:last_idx] doesn't. 
+** Chaining 
+#+BEGIN_SRC python
+iris=read_csv('data/iris.data')
+iris.query('SepalLength > 5').assign(SepalRatio=lambda x: x.SepalWidth/x.SepalLength, PetalRatio=lambda x: x.PetalWidth/PetalLength).plot(kind='scatter', x='SepalRatio',y='PetalRatio') 
+#+END_SRC
+** Dataframe: apply
+#+BEGIN_SRC python
+   df.apply(lambda x,y: x.where(x>0,y), y=df['A']) #same as df.where(df>0,df['A'],axis='index',inplace=TRUE))
+#+END_SRC
+** display
+#+BEGIN_SRC python
+> set_option('display.width',160) #default is 80
+> df.head()
+> bassball=read_csv('data/baseball.csv')
+> baseball.info()
+> baseball.ilocal[-20:, :12].to_string()
+#+END_SRC
+** exploratory data analysis
+#+BEGIN_SRC python
+df.columns=[x.lower() for x in df.columns] #show column names in lower case; 
+df.values #access the values #for heterogeneous data, dtype will be chosen to accommodate all data invloved.
+df.get_dtype_counts() #return the number of columns of each type
+df.someColumn.str.lower #vectorized string methods are available through string attribute. Note that for the column with string, the dtype is object 
+ df.convert_objects(convert_numeric=True) convert string that represents a numbedf.select_dtypes(include=['bool','int64']) #select the column of dtype bool and int64
+df.someCol.isin([2,4,6]) #return boolean vectors to indicate whether someCol in {2,4,6}; this boolean vectors can furthur be used for slicing.
+#+END_SRC
+** Iterator 
+#+BEGIN_SRC python 
+for idx, row in df.iterrows(): 
+     print ('%s\n%s' % (idx,row))
+#row is a reference, change to row will also alter df. 
+#+END_SRC
+** Query
+A very succinct and convenient syntax 
+#+BEGIN_SRC python
+df.query('b==["a","b","c"]') #select rows where column b is the one of the specified values. 
+df.query('b in a') #select rows where column b is one of the values in column a; which is equivalent to  df[df.b.isin(df.a)]
+#+END_SRC
+** Accelerated operations
+Pandas has support accelerating certain types of binary numerical and boolean operations using the numexpr and bottleneck libraries. 
+
+** convenient features
+Pandas has the following convenient features 
++ combining two overlapping dataset( A is more preferred but B has more data)
+ 
