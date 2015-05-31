@@ -237,7 +237,41 @@ ggplot(ds, aes(x=time, y=val, colour=type))+geom_line()+scale_x_continuous(break
       dev.off()
   }
 #+END_SRC
-
+	
+*** Color Scheme: 
+checkout RColorBrewer(RColorBrewer::display.brewer.all() show all color palettes. 
+*** gglot2
++ *plot* = a set of layers + scales + Coordinates + Facets 
++ *Layer* = data + aes(visual properties, like x(horizontal position), y(vertical positions), fill  ) + geom + stat transform(bins in histogram) + position adjustment 
++ *Data*: what to visualize; each aesthetic must be a column(transform the table to long format); In gglot terminology, categorical variables are called /discrete/, numerical variables are called /continuous/. This is different than standard R terminology. Only a certain data type might make sense for a particular type of graph. 
++ *Aesthetic*: visual properties, such as horizon position (x=..), vertical position(y=..), fill=.. 
++ *Scale* controls the mapping from the values to aesthetic space. functions setting the scale include: scale_x_continuous(limit=c(0,8)), scale_colour_manual();   
++ *Guides* map the visual properties back to data space and guides the viewer to interpret the graph (eg. Tick marks, axis labels) 
++ *Stats* transforms the data before it is mapped to aesthetic. For example, /geom_histogram(..)/ counts for each bin are then used to specify the height of a bar. 
++ *Themes* specifies the aspects of graph's appearance fall outside the scope of the /grammar of graphics/(Leland Willkinson), like background color, graphing area, fonts, grid lines, title text. This is  set by the function /theme()/ 
+*** rgl
+Use RStudio. X-window gives strangle colors and interactive behaviors.
+#+BEGIN_SRC R
+rm(list=ls(all.names=TRUE))
+library(rgl)
+##Necessary data transform  omitted here 
+color.z<-hsv(r,1.0,1.0,alpha=t.n) # t.n is in [0,1]; 0 for completely transparent. 
+open3d()
+plot3d(x,y,z,col=color.z, alpha=t.n, xlab="", ylab="", zlab="",axes=FALSE)
+axes3d(edges =c("x--","y--","z--"),nticks = 4,cex=0.5)
+rgl.bbox(color="grey40",emission="grey50", xlen=0, ylen=0,zlen=0) #specify the appearance of the bounding box. 
+#rgl.material(color="black") #reset to solid color for the text below
+mtext3d("num. partners",edge="x--",color="black",line=3)
+mtext3d("household income", edge="y--",color="black",line=4)
+mtext3d("ticket revenue", edge="z--",color="black",line=4)
+#interactively change the orientation and then get the view by  http://stackoverflow.com/questions/16362381/save-the-orientation-of-a-rgl-plot3d-plot
+myview<-structure(c(0.851206958293915, -0.249241456389427, -0.461872220039368, 
+                     0, -0.457670271396637, -0.783240020275116, -0.420800983905792, 
+                     0, -0.256875574588776, 0.569573879241943, -0.780768990516663, 
+                     0, 0, 0, 0, 1), .Dim = c(4L, 4L)) #specify the transformation matrices. 
+par3d(userMatrix=myview)
+rgl.snapshot("tmp.png",fmt="png") 
+#+END_SRC
 ** dplyr:A Grammar of Data Manipulation 
 #+BEGIN_SRC R
 library(dplyr)
@@ -275,8 +309,7 @@ fm3 <- glmer(remission ~ IL6 + CRP + CancerStage + LengthofStay + Experience +
     nAGQ = 10)
 print(m, corr = FALSE)
 fixef(m)
-#+END_SRC
-** 
+#+END_SRC 
 ** Advanced R
 *** Construct Syntax on the Fly
 #+BEGIN_SRC R
