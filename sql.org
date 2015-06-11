@@ -1,3 +1,36 @@
 
 * GO statement
    Separate data manipulation and date query;
+* Join
+#+BEGIN_SRC sql
+select air.PROD_CD, air.QTY as airQty, ocean.QTY as oceanQty, ocean.PROD_NM
+FROM [dbo].raw_air_shipment as air
+INNER JOIN [dbo].raw_ocean_shipment as ocean
+ON air.PROD_CD=ocean.PROD_CD
+where air.Qty > 0.5 * ocean.Qty;
+#+END_SRC
+
+* group by
+#+BEGIN_SRC sql
+select PROD_CD, MAX(PROD_NM), SUM(QTY), MAX([CNTR Trailer Arrived (Import)])
+FROM dbo.raw_ocean_shipment as ocean
+GROUP BY PROD_CD;
+#+END_SRC 
+
+* temporary tables
+#+BEGIN_SRC sql
+
+#create a temporary table
+select *, [SO.]+'-'+[PO.] as newTT_ID
+into #A
+from raw_Shipping_orders;
+
+# use the temp table to join 
+select * 
+from ocean_shipment_cleased_milestones_t1 as a
+inner join #A  b
+on a.TT_ID = b.newTT_ID;
+
+# remove the temp table
+drop table #A
+#+END_SRC
