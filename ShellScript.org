@@ -153,6 +153,7 @@ Sometimes we think in terms of word and want the match for the whole word. In th
    #+END_SRC
    The sed command 's/\t/,/g' replace tab with comma and 's/,,/, ,/g' fills in the missing field with a space. Note that without the fill-in step, the alignment is wrong. 
 ** /awk/
+A good tutorial: http://www.grymoire.com/Unix/Awk.html#uh-1
 *** Randomly Sample 1/1000 row. 
 #+BEGIN_SRC bash
 awk 'BEGIN {srand()} !/^$/ { if (rand() <= .001) print $0}' infile.txt> outfile.txt 
@@ -181,6 +182,11 @@ FNR==1 && NR!=1 {getline;}
 FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the <header> tags
 1{print}
 ' input-blob*.csv > input-all.csv
+#+END_SRC
+*** replace the commas inside quotes
+#+BEGIN_SRC shell
+#### -v key=values change the program variables; OFS is the output field separator; without -v OFS='"', the double quotes would be gone in the output.  
+ awk -F'"' -v OFS='"' '{ for (i=2; i<=NF; i+=2) gsub(",", "", $i) } 1' tmp.txt
 #+END_SRC
 ** /paste/
 *** Concatenate files columnwise  

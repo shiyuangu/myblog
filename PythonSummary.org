@@ -175,6 +175,8 @@ setup(**args) ##equivalent to passing in A=1, B=2
  v2 is v1[1:5] # return FALSE, the internal array is the same but meta data is not which make different identity See internal data structure for detail 
 #+END_SRC 
 ** dtype-structured array
+** syntax/function compared with matlab
+- numpy.where() <--> find() in matlab
 #+BEGIN_SRC python1
 import numpy as np
 data=np.zeros((2,), dtype=[('A','i4'),('B','f4'),('C','a10')])
@@ -250,11 +252,12 @@ iris.query('SepalLength > 5').assign(SepalRatio=lambda x: x.SepalWidth/x.SepalLe
 #+END_SRC
 ** exploratory data analysis
 #+BEGIN_SRC python
+df.dtypes  #show the dtypes for each column
 df.columns=[x.lower() for x in df.columns] #show column names in lower case; 
 df.values #access the values #for heterogeneous data, dtype will be chosen to accommodate all data invloved.
 df.get_dtype_counts() #return the number of columns of each type
 df.someColumn.str.lower #vectorized string methods are available through string attribute. Note that for the column with string, the dtype is object 
- df.convert_objects(convert_numeric=True) convert string that represents a numbedf.select_dtypes(include=['bool','int64']) #select the column of dtype bool and int64
+df.convert_objects(convert_numeric=True) convert string that represents a numbedf.select_dtypes(include=['bool','int64']) #select the column of dtype bool and int64
 df.someCol.isin([2,4,6]) #return boolean vectors to indicate whether someCol in {2,4,6}; this boolean vectors can furthur be used for slicing.
 #+END_SRC
 ** Iterator 
@@ -264,10 +267,14 @@ for idx, row in df.iterrows():
 #row is a reference, change to row will also alter df. 
 #+END_SRC
 ** Query
-A very succinct and convenient syntax 
+- A very succinct and convenient syntax 
 #+BEGIN_SRC python
 df.query('b==["a","b","c"]') #select rows where column b is the one of the specified values. 
 df.query('b in a') #select rows where column b is one of the values in column a; which is equivalent to  df[df.b.isin(df.a)]
+#+END_SRC
+- A bug makes it extremely dangerous, 
+#+BEGIN_SRC python
+df.query("A='abc'")  # This reset the columan A! '=' should be '=='
 #+END_SRC
 ** Accelerated operations
 Pandas has support accelerating certain types of binary numerical and boolean operations using the numexpr and bottleneck libraries. 
@@ -276,3 +283,41 @@ Pandas has support accelerating certain types of binary numerical and boolean op
 Pandas has the following convenient features 
 + combining two overlapping dataset( A is more preferred but B has more data)
  
+** Gotcha
+*** Never specify the dtype when reading in data. Instead, first read in, then convert http://stackoverflow.com/questions/15210962/specifying-dtype-with-pandas-read-csv
+#+BEGIN_SRC python
+# dont' use dtype converters explicity for the columns you care about
+# they will be converted to float64 if possible, or object if they cannot
+df = pd.read_csv('test.csv'.....)
+
+#### this is optional and related to the issue you posted ####
+# force anything that is not a numeric to nan
+# columns are the list of columns that you are interesetd in
+df[columns] = df[columns].convert_objects(convert_numeric=True)
+
+
+    # astype
+    df[columns] = df[columns].astype('float32')
+
+see http://pandas.pydata.org/pandas-docs/dev/basics.html#object-conversion
+
+Its not as efficient as doing it directly in read_csv (but that requires
+#+END_SRC
+* Pymssql 
+** Doc: http://www.pymssql.org/en/latest/intro.html
+** The parameter substitution of pymssql works sliently different than the python DB-API documented in https://code.google.com/p/pyodbc/wiki/Cursor. (Cf.http://stackoverflow.com/questions/23244450/cant-insert-tuple-to-mssql-db). 
+#+BEGIN_SRC python
+cursor.execute("select a from tbl where b=? and c=?", (10, 'Hello')) #Error; should change to: 
+cursor.execute("select a from tbl where b=%d and c=%s", (10, 'Hello')) # string will be properly quoted. 
+#+END_SRC
+* matplotlib
+If X-window is not setup correctly and matplotlib pylab is not working properly, try:
+** Use inline
+		%matplotlib inline
+		pylab,plot(x,y)
+		pylab.show()
+** Use non-interactive backend:   
+   import matplotlib
+   matplotlib.use('Agg')  # this should put before pylab.plot()
+   pylab.plot(x,y)
+   pylab.savefig("test.png")

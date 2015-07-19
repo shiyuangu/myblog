@@ -120,6 +120,7 @@ cor(ds) #won't work if ds has factors.
 corrplot.mix(cor(ds)) #visualize cor; library(corrplot)
 
 #quantile analysis 
+# right=T use left closed and right open interval, [a,b), include.lowest indicates whether the end point is included. 
 ds$QRev <- cut(ds$total_tkt_rev_yr1,breaks = quantile(ds$total_tkt_rev_yr1),include.lowest = TRUE,right=TRUE) 
 #+END_SRC
 *** Extracting rows/columns
