@@ -118,6 +118,43 @@ f._num  #44, now _num exists after a call to f.num
 #+END_SRC
 
 * Scoping Rules and Closure
+sgu:  There are two types of variables in a function: formal parameter and the other parameters, for example , in f(x) = a*x, x is the formal parameter. If a is bounded in the enclosing scope (not global scope, usually inside another function)  when the function f(x) is defined, f will has a closure and the value is remembered.. Closure is a function object which remembers the values regardless whether the enclosing scope is still present in memory. If  a is not bound in its immediate enclosing scope, the enclosing scope one level up, two level up before reaching the global scope  (regardless whether there is an 'a' in global scope), the name a will become a *free parameter* (https://docs.python.org/2/reference/executionmodel.html) and search in gloabl namespace. Note that in this case, f has no closure. Note that if there is no such name 'a' in global space at the time of *evaluation*, an error will be raised. If 'a' first exists but later is deleted, an error will also be raised. . Whether the parameter is found or not is determined by investigating f.__closure__[0].cell_contents, f.__closure__[1].cell_contents, ect. 
+#+BEGIN_SRC python 
+b = 2
+c = 1
+class A:
+    a = 1
+    def myprint(self):
+        print 'a=', self.a
+        print 'b=', b
+def myf(x):
+    b = 2
+    def myg(x):
+        print 'b*x+c=', b*x+c  # only b is bounded, c is free 
+    return myg
+
+>> g = myf(10)
+>> b = 3 #this doesn't change the binding in g
+>> g(2) = 5;  #b is still bound to 5
+>> c = 2
+>> g(2) = 6 ; #c is a free parameter and resolved to 2;
+>> g.__closure__[0].cell_contents  # 2
+>> g.__closure__[1]   #error since only one parameter is bounded. 
+
+b = 2 
+def myh(x):
+    return b*x + 1 #b is free variable, however, it always is referred to whatever global b is bound to. 
+
+def myh2(x):
+    b = 3    
+    return myh(x);  #in myh, b is still referred to the global name b, not the b locally defined in myh2; thee b when myh is defined is what matters. 
+
+>> myh2(3)   # still is 5
+del b 
+>> myh2(3)  #error, cannot find global name 
+
+
+#+END_SRC 
   + Variables in nested Functions are bound using /lexical scoping/. That is, names are resolved by first checking the local scope and then all enclosing scopres of the outer function definition from the innermost scope to the outermost scope. If no match is found, the global and built-in namespace are checked. Although names in enclosing scopes are accessible. Python 2 only allows variables to be reassigned in the innermost scope(local variables) and the global namespace(using global). Python 3 allows this by using nonlocal. 
 
   #+BEGIN_SRC python
@@ -137,7 +174,7 @@ f._num  #44, now _num exists after a call to f.num
        print "r=",r
     return next
   #+END_SRC
-  + When the statements that make up a function are packaged together with the environment in which they execute, the resulting object is known as closure. One use of closure is for lazy/delayed evaluation. Using this closure pattern is faster than using a class to capture the variables. 
+  + When the statements that make up a function are packaged together with the environment in which they define, the resulting object is known as closure. One use of closure is for lazy/delayed evaluation. Using this closure pattern is faster than using a class to capture the variables. 
   #+BEGIN_SRC python
   from urlib.request import urlopen(Python3)
   def page(url):
@@ -155,6 +192,34 @@ f._num  #44, now _num exists after a call to f.num
   'http://www.python.org'
   jython.__clousre__[0].cell_contents
   'http://www.jython.org'
+
+a = 20 
+def f1():
+    a = 10
+    def f2():
+        def f3(x):
+            return (a*x)
+        return f3
+    return f2
+>> g = f1()
+>> h = g()
+>> h(2) #20 
+>> h.__closure__[0] ##exist 
+
+##Note the the following doesn't form closure 
+a = 20 
+def f1():
+    ### a = 10  #take away this line and f3() has no closure. 
+    def f2():
+        def f3(x):
+            return (a*x)
+        return f3
+    return f2
+>> g = f1()
+>> h = g()
+>> h(2) #40 
+>> h.__closure__[0] ##Error. 
+ 
   #+END_SRC
 
 * Being Pythonic

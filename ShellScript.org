@@ -154,6 +154,7 @@ Sometimes we think in terms of word and want the match for the whole word. In th
    The sed command 's/\t/,/g' replace tab with comma and 's/,,/, ,/g' fills in the missing field with a space. Note that without the fill-in step, the alignment is wrong. 
 ** /awk/
 A good tutorial: http://www.grymoire.com/Unix/Awk.html#uh-1
+`man awk` is also quite complete about the syntax
 *** Randomly Sample 1/1000 row. 
 #+BEGIN_SRC bash
 awk 'BEGIN {srand()} !/^$/ { if (rand() <= .001) print $0}' infile.txt> outfile.txt 
@@ -169,7 +170,7 @@ awk -F, '$8==" pval" && $9<0.05 {print $0}' inputfile.csv
 *** Concatenate files with same header
 #+BEGIN_SRC bash
 ## concatenate csv files with the header stripped-off except the first file. 
-## FNR==1 && NR!=1: match the first line of a line except it's also the first line across all files(NR==1)
+## FNR==1 && NR!=1: match the first line of a file except it's also the first line across all files(NR==1)
 ## getline: skip the line. 
 ## 1{print}: print everything except the lines previous skipped  
 > awk '
@@ -196,6 +197,11 @@ FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the
 ### "-F," in awk specifies the field delimiter
 ### "-v OFS=','" inserts comma between fields on output
 paste -d, file1.csv, file2.csv, file2.csv|awk -F, -v OFS=',' '{print $1,$2, $4}'
+#+END_SRC
+** /gs/
+*** concatenate multiple ps file into one pdf and adjust the size of paper
+#+BEGIN_SRC bash
+gs -dBATCH -dNOPAUSE -sOutputFile=dot-test-all.pdf -sDEVICE=pdfwrite -c "<< /PageSize [3800 600]  >> setpagedevice"  -f dot-test*.ps
 #+END_SRC
 * Footnotes
 
