@@ -48,6 +48,10 @@ rsync -avzhe ssh --progress shiyuang@shiyuang.desktop.amazon.com://path/to/dir .
 rsync -avzhe "ssh -i /full/path/to/pem" --progress localdir user@ec2host.amazonaws.com://mnt/
 rsync -avzhe "ssh" --progress  cambia/ algorithm:cambia/ ## assume we have set up the host alias and id file in .ssh/config
 #+END_SRC
++ exclude subfolder
+#+BEGIN_SRC shell
+rsync -avhze "ssh" time-series-classification/ --exclude ".git" sgu@7070:time-series-classification
+#+END_SRC
 -a: archive
 -v: verbose
 -z: compress file data during transfer
