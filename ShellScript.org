@@ -207,6 +207,18 @@ paste -d, file1.csv, file2.csv, file2.csv|awk -F, -v OFS=',' '{print $1,$2, $4}'
 #+BEGIN_SRC bash
 gs -dBATCH -dNOPAUSE -sOutputFile=dot-test-all.pdf -sDEVICE=pdfwrite -c "<< /PageSize [3800 600]  >> setpagedevice"  -f dot-test*.ps
 #+END_SRC
+** /sort/
+*** sort by field and character
+*CAUTION: characters in a field are counted from the beginning of the preceding whitespace* 
+#+BEGIN_SRC bash
+# sort the following the 4th character in the 10th field. Caution: the both the field and character origin 1; but the characters in a field are counted from the beginning of the preceding whitespace; in the following line 10.4,10.4 is the KEYDEF, the first 10.4 means "the key starts from the 4th character in the 10th field", the second 10.4 is the ending location. The ending and starting location are the same and hence the key is only one character. (Cf. `man sort`)
+ls -ltr|cat -n|sort -k10.4,10.4   
+#+END_SRC
+*** sort by multiple keys
+#+BEGIN_SRC bash
+#the first key is the 4th character in the 10th field, the second key contains the 2nd and 3rd characters of the 10th field.
+ls -ltr|cat -n|sort -k10.4,10.4 -k10.2,10.3 
+#+END_SRC
 * Footnotes
 
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]
