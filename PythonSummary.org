@@ -256,7 +256,7 @@ we can see that this "normalize" flag is referred to rescaling the observation X
 ** Data Structure: 
 *** Series
 **** ndarry-like: can be passed to most NumPy function. Slicing also slice the index
-**** dict-like, can set/get values by index label, like s['key']=val; However, unlike a python dict, if a label doesn't exist, an exception is raised. Note that dict-like insertion(with broadcasting) is ok with DataFrame, ie., df['new col']=val, df.loc[:,'C']=df.loc[:,'A'] can also perform enlargement. 
+**** dict-like, can set/get values by index label, like s['key']=val; However, unlike a python dict, if a label doesn't exist, an exception is raised. Note that dict-like insertion(with broadcasting) is ok with DataFrame, ie., df['new col']=val, df.loc[:,'C']=df.loc[:,'A'] can also perform enlargement (DataFrame.ix can also performs enlargement, but not .iloc). 
 **** automatic label alignment 
 #+BEGIN_SRC python
 s[1:]+s[:-1] # due to the automatic label aligment, the first and the last entry is NaN
@@ -281,10 +281,20 @@ df=DataFrame(d)
 #+END_SRC
 **** If the data in DataFrame is numeric, elementwise numpy function and various other numpy functions can be used with no issues.
 **** There exists 3d(panel data in econometrics), 4d and nd dataframe.   
+** String Manipulation
+Designed for vectorization and ease to accommodate missing values. It is powerful when combined with pattern matching 
+#+BEGIN_SRC python
+data = {'Dave': "dave@gmail.com", 'Steve:': 'steve@gmail.com', 'Rob':np.nan}
+series = pd.Series(data)
+pattern = '([A-Z0-9._%+-]+)@([A-Z0-9.-]+)\\.([A-Z]{2,4})'
+series_2 = series.str.match(pattern,flags=re.IGNORECASE)
+series_2.str.get(1)
+#+END_SRC 
 ** Index/Selection
 #+BEGIN_SRC python
 df['foo'] #get the columne 'foo'
 df.foo #column can be accessed like class attribute if the column name is a valid python variable name.
+df[s]: if s is a boolean dataframe (like df[df['col0']<0]) it selects rows instead of columns; this is a bit inconsistent but this syntax arose our of practicality; if s is a boolean dataframe(like df[df<5]] = 0), it picks up the entries.  Note that indexing always returns view instead of copy. Use Dataframe.copy() to obtain a copy   
 df[df<0] #two dimension indexing; the resulting dataframe  has the same shape (still two dimensions in this cases) but the selected entries are NaN; In R, this logical indexing in two dimensions results in one dimension vector. 
 df.where(df>0, -df, inplace=TRUE) # ( replace negatives with its magnitudes. 
 df.mask(df>0) # replace the positive entries with NaN
@@ -303,6 +313,49 @@ panel[itemnames]
 **** use at()/iat() methods for fast scalar value getting and setting([] is slow since it must handle a lot of cases) 
 **** Gotchas 
 + df.loc[start_idx:last_idx] includes the last index but df[start_idx:last_idx] doesn't. 
+** MultiIndex(column/row)
+*** flatten multi-index(rows) 
+#+BEGIN_SRC python 
+df = pd.DataFrame({'key':['a','a','b','b'], 'val1':np.arange(4), 'val2':np.arange(4)})
+gb = df.groupby('key')
+In [11]: gba = gb.agg({'val1':'size', 'val2':[np.mean,np.sum]})
+Out[11]: 
+    val2     val1
+    mean sum size
+key              
+a    0.5   1    2
+b    2.5   5    2
+In [17]: gba.columns.values
+Out[17]: array([('val2', 'mean'), ('val2', 'sum'), ('val1', 'size')], dtype=object)
+
+In [18]: gba.columns. get_level_values(0)
+Out[18]: Index([u'val2', u'val2', u'val1'], dtype='object')
+
+In [19]: gba.columns. get_level_values(1)
+Out[19]: Index([u'mean', u'sum', u'size'], dtype='object')
+
+In [20]: gba.columns = gba.columns.get_level_values(0)
+
+In [21]: gba
+Out[21]: 
+     val2  val2  val1
+key                  
+a     0.5     1     2
+b     2.5     5     2
+
+In [22]: gba['val2']
+Out[22]: 
+     val2  val2
+key            
+a     0.5     1
+b     2.5     5
+
+
+#+END_SRC
+** Insert/delete rows/columns
+df.append(dict-like) # no check for new key; so spelling error would create a new column ; also not in place. 
+df['newcol'] = series 
+del df['col']
 ** Chaining 
 #+BEGIN_SRC python
 iris=read_csv('data/iris.data')
@@ -322,6 +375,8 @@ iris.query('SepalLength > 5').assign(SepalRatio=lambda x: x.SepalWidth/x.SepalLe
 #+END_SRC
 ** exploratory data analysis
 #+BEGIN_SRC python
+df.info (): summary 
+s.value_count()
 df.dtypes  #show the dtypes for each column
 df.columns=[x.lower() for x in df.columns] #show column names in lower case; 
 df.values #access the values #for heterogeneous data, dtype will be chosen to accommodate all data invloved.
