@@ -300,9 +300,21 @@ df.where(df>0, -df, inplace=TRUE) # ( replace negatives with its magnitudes.
 df.mask(df>0) # replace the positive entries with NaN
 df.lookup([row1,row2],[col1,col2]) #return 1d numpy array with two entries (row1,col1),(row2,col2))
 df.select(lambda x: x=='A', axis=1) #keep the column 'A' only 
+df.isin({'A':[1,3],'B':[2,4]})
+df[df.A<10 & df.B>10]
+df.query('colA == "Hello" & colB == "World"')
 #+END_SRC
-
-**** Three indexing methods: by label (.loc), by position(.iloc)  and advance indexing (.ix) 
+*** Query
+- A very succinct and convenient syntax 
+#+BEGIN_SRC python
+df.query('b==["a","b","c"]') #select rows where column b is the one of the specified values. 
+df.query('b in a') #select rows where column b is one of the values in column a; which is equivalent to  df[df.b.isin(df.a)]
+#+END_SRC
+- A bug makes it extremely dangerous, 
+#+BEGIN_SRC python
+df.query("A='abc'")  # This reset the columan A! '=' should be '=='
+#+END_SRC
+*** Three indexing methods: by label (.loc), by position(.iloc)  and advance indexing (.ix) 
 #+BEGIN_SRC python
 df.loc[row_idx, col_idx]
 panel.loc[item_idx, major_idx, minor_idx) #assume all for unspecified dim. 
@@ -310,8 +322,8 @@ df[colnames] #([] correponds __getitem__, selecting low-dim slice
 panel[itemnames]  
 #+END_SRC
 
-**** use at()/iat() methods for fast scalar value getting and setting([] is slow since it must handle a lot of cases) 
-**** Gotchas 
+*** use at()/iat() methods for fast scalar value getting and setting([] is slow since it must handle a lot of cases) 
+*** Gotchas 
 + df.loc[start_idx:last_idx] includes the last index but df[start_idx:last_idx] doesn't. 
 ** MultiIndex(column/row)
 *** flatten multi-index(rows) 
@@ -350,6 +362,11 @@ key
 a     0.5     1
 b     2.5     5
 
+
+#+END_SRC
+*** pandas index/multi-index values may not not uniques
+#+BEGIN_SRC python
+df = pd.DataFrame(np.ones((3,3)), index =['A','B','C'], columns=['foo_1','foo_2', 'foo_3']).set_index(['foo_1','foo_2']).loc[(1,1),:] # this is valid and will return everything. 
 
 #+END_SRC
 ** Insert/delete rows/columns
@@ -391,16 +408,7 @@ for idx, row in df.iterrows():
      print ('%s\n%s' % (idx,row))
 #row is a reference, change to row will also alter df. 
 #+END_SRC
-** Query
-- A very succinct and convenient syntax 
-#+BEGIN_SRC python
-df.query('b==["a","b","c"]') #select rows where column b is the one of the specified values. 
-df.query('b in a') #select rows where column b is one of the values in column a; which is equivalent to  df[df.b.isin(df.a)]
-#+END_SRC
-- A bug makes it extremely dangerous, 
-#+BEGIN_SRC python
-df.query("A='abc'")  # This reset the columan A! '=' should be '=='
-#+END_SRC
+
 ** Accelerated operations
 Pandas has support accelerating certain types of binary numerical and boolean operations using the numexpr and bottleneck libraries. 
 
