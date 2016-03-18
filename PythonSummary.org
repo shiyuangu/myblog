@@ -35,6 +35,12 @@
 	 else:
 	    print "in %s" % (__name__,) 
    #+END_SRC
+** Use imp
+#+BEGIN_SRC python
+import imp 
+imp.loan_source("config","/path/to/file.conf")
+conf = __import__('config').configs  #config is a variable defind on the top level of file.conf 
+#+END_SRC
 * OOP:
 ** Unlike C++/Java, Base class _init_() is not automatically invoked:
  #+BEGIN_SRC python
@@ -118,7 +124,7 @@ f._num  #44, now _num exists after a call to f.num
 #+END_SRC
 
 * Scoping Rules and Closure
-sgu:  There are two types of variables in a function: formal parameter and the other parameters, for example , in f(x) = a*x, x is the formal parameter. If a is bounded in the enclosing scope (not global scope, usually inside another function)  when the function f(x) is defined, f will has a closure and the value is remembered.. Closure is a function object which remembers the values regardless whether the enclosing scope is still present in memory. If  a is not bound in its immediate enclosing scope, the enclosing scope one level up, two level up before reaching the global scope  (regardless whether there is an 'a' in global scope), the name a will become a *free parameter* (https://docs.python.org/2/reference/executionmodel.html) and search in gloabl namespace. Note that in this case, f has no closure. Note that if there is no such name 'a' in global space at the time of *evaluation*, an error will be raised. If 'a' first exists but later is deleted, an error will also be raised. . Whether the parameter is found or not is determined by investigating f.__closure__[0].cell_contents, f.__closure__[1].cell_contents, ect. 
+ sgu:  There are two types of variables in a function: formal parameter and the other parameters, for example , in f(x) = a*x, x is the formal parameter. If a is bounded in the enclosing scope (not global scope, usually inside another function)  when the function f(x) is defined, f will has a closure and the value is remembered.. Closure is a function object which remembers the values regardless whether the enclosing scope is still present in memory. If  a is not bound in its immediate enclosing scope, the enclosing scope one level up, two level up before reaching the global scope  (regardless whether there is an 'a' in global scope), the name a will become a *free parameter* (https://docs.python.org/2/reference/executionmodel.html) and search in gloabl namespace. Note that in this case, f has no closure. Note that if there is no such name 'a' in global space at the time of *evaluation*, an error will be raised. If 'a' first exists but later is deleted, an error will also be raised. . Whether the parameter is found or not is determined by investigating f.__closure__[0].cell_contents, f.__closure__[1].cell_contents, ect. 
 #+BEGIN_SRC python 
 b = 2
 c = 1
@@ -153,8 +159,8 @@ def myh2(x):
 del b 
 >> myh2(3)  #error, cannot find global name 
 
-
-#+END_SRC 
+#+END_SRC
+ 
   + Variables in nested Functions are bound using /lexical scoping/. That is, names are resolved by first checking the local scope and then all enclosing scopres of the outer function definition from the innermost scope to the outermost scope. If no match is found, the global and built-in namespace are checked. Although names in enclosing scopes are accessible. Python 2 only allows variables to be reassigned in the innermost scope(local variables) and the global namespace(using global). Python 3 allows this by using nonlocal. 
 
   #+BEGIN_SRC python
@@ -222,6 +228,38 @@ def f1():
  
   #+END_SRC
 
++ Local variable may shadow global 
+#+BEGIN_SRC python
+x = 100
+print "1. Global x:", x
+class Test(object):
+    y = x
+    print "2. Enclosed y:", y
+    x = x + 1 
+    print "3. Enclosed x:", x
+    z = x
+
+    def method(self):
+        print "4. Enclosed self.x", self.x
+        print "5. Global x", x
+        try:
+            print y
+        except NameError, e:
+            print "6.", e
+
+    def method_local_ref(self):
+        #print x
+        try:
+            print x  #this cause exception caused by the line x=200 below
+        except UnboundLocalError, e:
+            print "7.", e
+        x = 200     #this line shadows the global in the whole function which causes error in the line above.  
+        print "8. Local x", x
+
+obj = Test()
+obj.method()
+obj.method_local_ref()
+#+END_SRC
 * Being Pythonic
 ** double asterisk
 The double asterisk can be used in defining kwargs as well as passing a dict as arguments: 
@@ -326,6 +364,15 @@ panel[itemnames]
 *** Gotchas 
 + df.loc[start_idx:last_idx] includes the last index but df[start_idx:last_idx] doesn't. 
 ** MultiIndex(column/row)
+*** Select rows with list of values in a level 
+#+BEGIN_SRC python 
+gb = df[['date','seg','balance']].groupby(['date','seg']).agg('sum')
+gb[gb.index.get_level_values("seg").isin(["A","B"])]
+#+END_SRC
+*** Swaplevel and sortlevel
+#+BEGIN_SRC python
+gb.swaplevel("seg","date").sortlevel("seg")
+#+END_SRC
 *** flatten multi-index(rows) 
 #+BEGIN_SRC python 
 df = pd.DataFrame({'key':['a','a','b','b'], 'val1':np.arange(4), 'val2':np.arange(4)})
@@ -364,9 +411,15 @@ b     2.5     5
 
 
 #+END_SRC
+*** Turn on/off sparse hierarchical output
+#+BEGIN_SRC python
+pd.set_option('display.multi_sparse',True)
+#+END_SRC
 *** pandas index/multi-index values may not not uniques
+
 #+BEGIN_SRC python
 df = pd.DataFrame(np.ones((3,3)), index =['A','B','C'], columns=['foo_1','foo_2', 'foo_3']).set_index(['foo_1','foo_2']).loc[(1,1),:] # this is valid and will return everything. 
+
 
 #+END_SRC
 ** Insert/delete rows/columns
@@ -416,6 +469,11 @@ Pandas has support accelerating certain types of binary numerical and boolean op
 Pandas has the following convenient features 
 + combining two overlapping dataset( A is more preferred but B has more data)
  
+** Time Series
+#+BEGIN_SRC python
+from dateutil.relativedelta import relativedelta
+
+#+END_SRC
 ** Gotcha
 *** Never specify the dtype when reading in data. Instead, first read in, then convert http://stackoverflow.com/questions/15210962/specifying-dtype-with-pandas-read-csv
 #+BEGIN_SRC python
@@ -436,6 +494,7 @@ see http://pandas.pydata.org/pandas-docs/dev/basics.html#object-conversion
 
 Its not as efficient as doing it directly in read_csv (but that requires
 #+END_SRC
+
 * Pymssql 
 ** Doc: http://www.pymssql.org/en/latest/intro.html
 ** The parameter substitution of pymssql works sliently different than the python DB-API documented in https://code.google.com/p/pyodbc/wiki/Cursor. (Cf.http://stackoverflow.com/questions/23244450/cant-insert-tuple-to-mssql-db). 
