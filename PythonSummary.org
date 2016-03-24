@@ -261,6 +261,8 @@ obj.method()
 obj.method_local_ref()
 #+END_SRC
 * Being Pythonic
+** Mutable vs. Immutable 
+   For mutable types, operations that compute new values might actually return a reference to any existing object with the same type and value, for example: a = 1 and b = 1; However, this is not allowed for mutable object, for example, a = []; b= []; c = []; these empty lists are all different objects. 
 ** double asterisk
 The double asterisk can be used in defining kwargs as well as passing a dict as arguments: 
 #+BEGIN_SRC python 
