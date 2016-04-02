@@ -19,6 +19,15 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
   #+BEGIN_SRC shell
   ls prod_JP*|xargs zsh -c 'emacs "$@"</dev/tty'
   #+END_SRC
++ execute user function on /find/
+#+BEGIN_SRC shell
+#example 1
+export -f myfunc #export the function; otherwise, the subshell won't know it
+find . -exec bash -c 'myfunc "$0"' {} \; #only shell know how to execute the user function; {} will be substitute by the filename  and further substitute $0;   
+#example 2
+find . -type \*csv --exec sh -c '"$0" "$@" &' gzip --fast {} \; # $0 is gzip and $@ are all other parameters which in this case are "--fast {}" with {} substitute by filename from find.  
+
+#+END_SRC
 * Utilities
 ** /find/ (Cf. [fn:2]):
 + -exec 
