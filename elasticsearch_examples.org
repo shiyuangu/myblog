@@ -1,0 +1,85 @@
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#
+PUT /megacorp/employee/1
+{
+    "first_name" : "John",
+    "last_name" :  "Smith",
+    "age" :        26,
+    "about" :      "I love to go rock climbing",
+    "interests": [ "sports", "music" ]
+}
+
+PUT /megacorp/employee/2
+{
+    "first_name" : "George",
+    "last_name" :  "Bush",
+    "age" :        66,
+    "about" :      "I love to fly"
+}
+
+GET /megacorp/employee/_search
+
+GET /sklearn/newsgroup/1
+
+GET /sklearn/newsgroup/1
+
+GET /sklearn/_search
+{
+    "query": { "match_all": {}},
+    "size":  2
+}
+
+GET /textsimilaritytest/_search
+{
+    "query": { "match_all": {}},
+    "size":  2
+}
+
+GET /sklearn/_search
+{
+    "query": {
+    "more_like_this" : {
+        "fields" : ["data"],
+        "docs" : [
+        {
+            "_id" : "1"
+        }],
+        "max_query_terms": 400, 
+        "include": false
+    }
+}
+}
+
+
+GET /sklearn/_search
+{
+    "query": {
+    "more_like_this" : {
+        "fields" : ["data"],
+        "ids" : ["185"],
+        "max_query_terms": 4000,
+        "min_term_freq": 0
+    }
+  },
+  "size": 10
+}
+
+
+GET /sklearn/newsgroup/_search
+{
+    "query": {
+    "more_like_this" : {
+        "fields" : ["data"],
+        "like_text": "Once upon a time", 
+        "max_query_terms": 4000,
+        "min_term_freq": 0
+    }
+  },
+  "size": 10
+}

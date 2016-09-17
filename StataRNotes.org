@@ -50,6 +50,7 @@ gl_product_gr~p int     %8.0g
 #+END_SRC
 * R
 ** Getting Help
++ ?funcname: this also work for the cross reference "See Also"
 + help(func)
 + getAnywhere(obj) 
 + help("[[")
@@ -120,6 +121,7 @@ cor(ds) #won't work if ds has factors.
 corrplot.mix(cor(ds)) #visualize cor; library(corrplot)
 
 #quantile analysis 
+# right=T use left closed and right open interval, [a,b), include.lowest indicates whether the end point is included. 
 ds$QRev <- cut(ds$total_tkt_rev_yr1,breaks = quantile(ds$total_tkt_rev_yr1),include.lowest = TRUE,right=TRUE) 
 #+END_SRC
 *** Extracting rows/columns
@@ -138,6 +140,14 @@ cbind(v1,X=v2) #combine columns, appending "X" to the v2's columns' name)
 aggregate(data=ds, j~priceBand+sample_rate, FUN=length) 
 #+END_SRC
 Cf. dplyr package for more sophisticated grouping
+** The Language
+*** Ref: R Language Definition
+*** OOP
+R relies on a class system and mechanism for dispatching based on the class of an object. For example, plot(obj,...) actual call different functions based on the class of obj. Some useful commands:
+#+BEGIN_SRC R
+class(obj)  #show the class of obj 
+methods(class="Mclust")  #List all available methods for an S3 generic function, or all methods for a class.
+#+END_SRC
 ** Plotting
 *** simple boxplot/export
 #+BEGIN_SRC r 
@@ -337,3 +347,8 @@ glm.fit <- glm(lr.formula, data=ds, family=binomial)
 #+end_src
 
 	
+** Package: Mixture model: mclust
+*** Reference: 
+Technical report:C. Fraley, A. E. Raftery, T. B. Murphy and L. Scrucca (2012). mclust Version 4 for R: Normal
+Mixture Modeling for Model-Based Clustering, Classification, and Density Estimation. Technical
+Report No. 597, Department of Statistics, University of Washington.

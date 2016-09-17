@@ -1,6 +1,11 @@
 
 * GO statement
    Separate data manipulation and date query;
+* show all columns and data type in a database
+#+BEGIN_SRC sql  
+SELECT table_schema, table_name, column_name, data_type, character_maximum_length
+FROM INFORMATION_SCHEMA.COLUMNS;
+#+END_SRC
 * Join
 #+BEGIN_SRC sql
 select air.PROD_CD, air.QTY as airQty, ocean.QTY as oceanQty, ocean.PROD_NM
@@ -34,3 +39,8 @@ on a.TT_ID = b.newTT_ID;
 # remove the temp table
 drop table #A
 #+END_SRC
+* "re-compile view"
+#+BEGIN_SRC sql
+sp_refreshview @viewname =  'dbo.v_master_sales'
+#+END_SRC
+

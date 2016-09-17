@@ -1,0 +1,6 @@
+* search
++ Cf. https://www.elastic.co/guide/en/elasticsearch/guide/current/search.html
++ ES stores the documents as well as the indexes, so that it can do SQL like structure query and full-text search 
++  Mapping, Analysis, Query DSL 
++  Avoid deep pagination:
+   retrieving the results from=10,000 and size=10  requires each shard to maintain a priority queue of size 10,010 and the requesting node to sort 10,010*num_shards.  Cf. https://www.elastic.co/guide/en/elasticsearch/guide/current/pagination.html

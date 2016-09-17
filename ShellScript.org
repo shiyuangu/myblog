@@ -18,7 +18,22 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
 + Piping with stdin redirection. Without the stdin redirection, emacs complains the stdin is not tty. The "$@" is a [[http://unixhelp.ed.ac.uk/scrpt/scrpt2.2.2.html][Special Shell Variables]] which is a string containing all arguments to the shell 
   #+BEGIN_SRC shell
   ls prod_JP*|xargs zsh -c 'emacs "$@"</dev/tty'
+<<<<<<< variant A
   #+END_SRC 
+>>>>>>> variant B
+  #+END_SRC
++ execute user function on /find/
+#+BEGIN_SRC shell
+#example 1
+export -f myfunc #export the function; otherwise, the subshell won't know it
+find . -exec bash -c 'myfunc "$0"' {} \; #only shell know how to execute the user function; {} will be substitute by the filename  and further substitute $0;   
+#example 2
+find . -type \*csv --exec sh -c '"$0" "$@" &' gzip --fast {} \; # $0 is gzip and $@ are all other parameters which in this case are "--fast {}" with {} substitute by filename from find.  
+
+#+END_SRC
+####### Ancestor
+  #+END_SRC
+======= end
 * Utilities
 ** /find/ (Cf. [fn:2]):
 + -exec 
@@ -51,6 +66,10 @@ http://unix.stackexchange.com/questions/68846/how-do-i-remove-all-sub-directorie
 rsync -avzhe ssh --progress shiyuang@shiyuang.desktop.amazon.com://path/to/dir .
 rsync -avzhe "ssh -i /full/path/to/pem" --progress localdir user@ec2host.amazonaws.com://mnt/
 rsync -avzhe "ssh" --progress  cambia/ algorithm:cambia/ ## assume we have set up the host alias and id file in .ssh/config
+#+END_SRC
++ exclude subfolder
+#+BEGIN_SRC shell
+rsync -avhze "ssh" time-series-classification/ --exclude ".git" sgu@7070:time-series-classification
 #+END_SRC
 -a: archive
 -v: verbose
@@ -157,7 +176,13 @@ Sometimes we think in terms of word and want the match for the whole word. In th
    #+END_SRC
    The sed command 's/\t/,/g' replace tab with comma and 's/,,/, ,/g' fills in the missing field with a space. Note that without the fill-in step, the alignment is wrong. 
 ** /awk/
+<<<<<<< variant A
 A good tutorial: http://www.grymoire.com/Unix/Awk.html#uh-1
+>>>>>>> variant B
+A good tutorial: http://www.grymoire.com/Unix/Awk.html#uh-1
+`man awk` is also quite complete about the syntax
+####### Ancestor
+======= end
 *** Randomly Sample 1/1000 row. 
 #+BEGIN_SRC bash
 awk 'BEGIN {srand()} !/^$/ { if (rand() <= .001) print $0}' infile.txt> outfile.txt 
@@ -173,7 +198,7 @@ awk -F, '$8==" pval" && $9<0.05 {print $0}' inputfile.csv
 *** Concatenate files with same header
 #+BEGIN_SRC bash
 ## concatenate csv files with the header stripped-off except the first file. 
-## FNR==1 && NR!=1: match the first line of a line except it's also the first line across all files(NR==1)
+## FNR==1 && NR!=1: match the first line of a file except it's also the first line across all files(NR==1)
 ## getline: skip the line. 
 ## 1{print}: print everything except the lines previous skipped  
 > awk '
@@ -201,6 +226,27 @@ FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the
 ### "-v OFS=','" inserts comma between fields on output
 paste -d, file1.csv, file2.csv, file2.csv|awk -F, -v OFS=',' '{print $1,$2, $4}'
 #+END_SRC
+<<<<<<< variant A
+** /gs/
+*** concatenate multiple ps file into one pdf and adjust the size of paper
+#+BEGIN_SRC bash
+gs -dBATCH -dNOPAUSE -sOutputFile=dot-test-all.pdf -sDEVICE=pdfwrite -c "<< /PageSize [3800 600]  >> setpagedevice"  -f dot-test*.ps
+#+END_SRC
+** /sort/
+*** sort by field and character
+*CAUTION: characters in a field are counted from the beginning of the preceding whitespace* 
+#+BEGIN_SRC bash
+# sort the following the 4th character in the 10th field. Caution: the both the field and character origin 1; but the characters in a field are counted from the beginning of the preceding whitespace; in the following line 10.4,10.4 is the KEYDEF, the first 10.4 means "the key starts from the 4th character in the 10th field", the second 10.4 is the ending location. The ending and starting location are the same and hence the key is only one character. (Cf. `man sort`)
+ls -ltr|cat -n|sort -k10.4,10.4   
+#+END_SRC
+*** sort by multiple keys
+#+BEGIN_SRC bash
+#the first key is the 4th character in the 10th field, the second key contains the 2nd and 3rd characters of the 10th field.
+ls -ltr|cat -n|sort -k10.4,10.4 -k10.2,10.3 
+#+END_SRC
+####### Ancestor
+======= end
+
 * Package Management
 ** list all installed package 
 apt list --installed (for ubuntu 14.04)
@@ -208,9 +254,7 @@ apt list --installed (for ubuntu 14.04)
 dpkg-query -L openjdk-8-jdk
 ** switch version
 sudo update-alternatives --config javac
-which lists all alternatives and prompts which version to switch to
-
-
+which lists all alternatives and prompts which version to switch to 
 * Footnotes
 
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]

@@ -35,6 +35,12 @@
 	 else:
 	    print "in %s" % (__name__,) 
    #+END_SRC
+** Use imp
+#+BEGIN_SRC python
+import imp 
+imp.loan_source("config","/path/to/file.conf")
+conf = __import__('config').configs  #config is a variable defind on the top level of file.conf 
+#+END_SRC
 * OOP:
 ** Unlike C++/Java, Base class _init_() is not automatically invoked:
  #+BEGIN_SRC python
@@ -118,6 +124,43 @@ f._num  #44, now _num exists after a call to f.num
 #+END_SRC
 
 * Scoping Rules and Closure
+ sgu:  There are two types of variables in a function: formal parameter and the other parameters, for example , in f(x) = a*x, x is the formal parameter. If a is bounded in the enclosing scope (not global scope, usually inside another function)  when the function f(x) is defined, f will has a closure and the value is remembered.. Closure is a function object which remembers the values regardless whether the enclosing scope is still present in memory. If  a is not bound in its immediate enclosing scope, the enclosing scope one level up, two level up before reaching the global scope  (regardless whether there is an 'a' in global scope), the name a will become a *free parameter* (https://docs.python.org/2/reference/executionmodel.html) and search in gloabl namespace. Note that in this case, f has no closure. Note that if there is no such name 'a' in global space at the time of *evaluation*, an error will be raised. If 'a' first exists but later is deleted, an error will also be raised. . Whether the parameter is found or not is determined by investigating f.__closure__[0].cell_contents, f.__closure__[1].cell_contents, ect. 
+#+BEGIN_SRC python 
+b = 2
+c = 1
+class A:
+    a = 1
+    def myprint(self):
+        print 'a=', self.a
+        print 'b=', b
+def myf(x):
+    b = 2
+    def myg(x):
+        print 'b*x+c=', b*x+c  # only b is bounded, c is free 
+    return myg
+
+>> g = myf(10)
+>> b = 3 #this doesn't change the binding in g
+>> g(2) = 5;  #b is still bound to 5
+>> c = 2
+>> g(2) = 6 ; #c is a free parameter and resolved to 2;
+>> g.__closure__[0].cell_contents  # 2
+>> g.__closure__[1]   #error since only one parameter is bounded. 
+
+b = 2 
+def myh(x):
+    return b*x + 1 #b is free variable, however, it always is referred to whatever global b is bound to. 
+
+def myh2(x):
+    b = 3    
+    return myh(x);  #in myh, b is still referred to the global name b, not the b locally defined in myh2; thee b when myh is defined is what matters. 
+
+>> myh2(3)   # still is 5
+del b 
+>> myh2(3)  #error, cannot find global name 
+
+#+END_SRC
+ 
   + Variables in nested Functions are bound using /lexical scoping/. That is, names are resolved by first checking the local scope and then all enclosing scopres of the outer function definition from the innermost scope to the outermost scope. If no match is found, the global and built-in namespace are checked. Although names in enclosing scopes are accessible. Python 2 only allows variables to be reassigned in the innermost scope(local variables) and the global namespace(using global). Python 3 allows this by using nonlocal. 
 
   #+BEGIN_SRC python
@@ -137,7 +180,7 @@ f._num  #44, now _num exists after a call to f.num
        print "r=",r
     return next
   #+END_SRC
-  + When the statements that make up a function are packaged together with the environment in which they execute, the resulting object is known as closure. One use of closure is for lazy/delayed evaluation. Using this closure pattern is faster than using a class to capture the variables. 
+  + When the statements that make up a function are packaged together with the environment in which they define, the resulting object is known as closure. One use of closure is for lazy/delayed evaluation. Using this closure pattern is faster than using a class to capture the variables. 
   #+BEGIN_SRC python
   from urlib.request import urlopen(Python3)
   def page(url):
@@ -155,9 +198,71 @@ f._num  #44, now _num exists after a call to f.num
   'http://www.python.org'
   jython.__clousre__[0].cell_contents
   'http://www.jython.org'
+
+a = 20 
+def f1():
+    a = 10
+    def f2():
+        def f3(x):
+            return (a*x)
+        return f3
+    return f2
+>> g = f1()
+>> h = g()
+>> h(2) #20 
+>> h.__closure__[0] ##exist 
+
+##Note the the following doesn't form closure 
+a = 20 
+def f1():
+    ### a = 10  #take away this line and f3() has no closure. 
+    def f2():
+        def f3(x):
+            return (a*x)
+        return f3
+    return f2
+>> g = f1()
+>> h = g()
+>> h(2) #40 
+>> h.__closure__[0] ##Error. 
+ 
   #+END_SRC
 
++ Local variable may shadow global 
+#+BEGIN_SRC python
+x = 100
+print "1. Global x:", x
+class Test(object):
+    y = x
+    print "2. Enclosed y:", y
+    x = x + 1 
+    print "3. Enclosed x:", x
+    z = x
+
+    def method(self):
+        print "4. Enclosed self.x", self.x
+        print "5. Global x", x
+        try:
+            print y
+        except NameError, e:
+            print "6.", e
+
+    def method_local_ref(self):
+        #print x
+        try:
+            print x  #this cause exception caused by the line x=200 below
+        except UnboundLocalError, e:
+            print "7.", e
+        x = 200     #this line shadows the global in the whole function which causes error in the line above.  
+        print "8. Local x", x
+
+obj = Test()
+obj.method()
+obj.method_local_ref()
+#+END_SRC
 * Being Pythonic
+** Mutable vs. Immutable 
+   For mutable types, operations that compute new values might actually return a reference to any existing object with the same type and value, for example: a = 1 and b = 1; However, this is not allowed for mutable object, for example, a = []; b= []; c = []; these empty lists are all different objects. 
 ** double asterisk
 The double asterisk can be used in defining kwargs as well as passing a dict as arguments: 
 #+BEGIN_SRC python 
@@ -175,16 +280,23 @@ setup(**args) ##equivalent to passing in A=1, B=2
  v2 is v1[1:5] # return FALSE, the internal array is the same but meta data is not which make different identity See internal data structure for detail 
 #+END_SRC 
 ** dtype-structured array
+** syntax/function compared with matlab
+- numpy.where() <--> find() in matlab
 #+BEGIN_SRC python1
 import numpy as np
 data=np.zeros((2,), dtype=[('A','i4'),('B','f4'),('C','a10')])
 data[:]=[(1,2.0,'Hello'),(2,3,'World')]
 #+END_SRC
+* Scikit-learn 
+** "Normalization" for OLS 
+The normalization flag in LinearRegression constructor is not clearly explained. sklearn.linear_model.LinearRegression(normalize=True). After some digging,
+we can see that this "normalize" flag is referred to rescaling the observation X. Note than "centering"(i.e, subtracting the mean) is always done regardless of this normalization flag. The source code makes use of a math property the intercept is zero after we center both Y and X. Also, the flag "normalize" is purely for preconditioning. If it set true, the coefficient/intercept are transformed back properly.  Therefore, if ill-conditioning is not an issue, "normalize" flag should not change the value of the attributes /coef_/ or /intercept_/. 
+
 * Pandas
 ** Data Structure: 
 *** Series
 **** ndarry-like: can be passed to most NumPy function. Slicing also slice the index
-**** dict-like, can set/get values by index label, like s['key']=val; However, unlike a python dict, if a label doesn't exist, an exception is raised. Note that dict-like insertion(with broadcasting) is ok with DataFrame, ie., df['new col']=val, df.loc[:,'C']=df.loc[:,'A'] can also perform enlargement. 
+**** dict-like, can set/get values by index label, like s['key']=val; However, unlike a python dict, if a label doesn't exist, an exception is raised. Note that dict-like insertion(with broadcasting) is ok with DataFrame, ie., df['new col']=val, df.loc[:,'C']=df.loc[:,'A'] can also perform enlargement (DataFrame.ix can also performs enlargement, but not .iloc). 
 **** automatic label alignment 
 #+BEGIN_SRC python
 s[1:]+s[:-1] # due to the automatic label aligment, the first and the last entry is NaN
@@ -209,18 +321,40 @@ df=DataFrame(d)
 #+END_SRC
 **** If the data in DataFrame is numeric, elementwise numpy function and various other numpy functions can be used with no issues.
 **** There exists 3d(panel data in econometrics), 4d and nd dataframe.   
+** String Manipulation
+Designed for vectorization and ease to accommodate missing values. It is powerful when combined with pattern matching 
+#+BEGIN_SRC python
+data = {'Dave': "dave@gmail.com", 'Steve:': 'steve@gmail.com', 'Rob':np.nan}
+series = pd.Series(data)
+pattern = '([A-Z0-9._%+-]+)@([A-Z0-9.-]+)\\.([A-Z]{2,4})'
+series_2 = series.str.match(pattern,flags=re.IGNORECASE)
+series_2.str.get(1)
+#+END_SRC 
 ** Index/Selection
 #+BEGIN_SRC python
 df['foo'] #get the columne 'foo'
 df.foo #column can be accessed like class attribute if the column name is a valid python variable name.
+df[s]: if s is a boolean dataframe (like df[df['col0']<0]) it selects rows instead of columns; this is a bit inconsistent but this syntax arose our of practicality; if s is a boolean dataframe(like df[df<5]] = 0), it picks up the entries.  Note that indexing always returns view instead of copy. Use Dataframe.copy() to obtain a copy   
 df[df<0] #two dimension indexing; the resulting dataframe  has the same shape (still two dimensions in this cases) but the selected entries are NaN; In R, this logical indexing in two dimensions results in one dimension vector. 
 df.where(df>0, -df, inplace=TRUE) # ( replace negatives with its magnitudes. 
 df.mask(df>0) # replace the positive entries with NaN
 df.lookup([row1,row2],[col1,col2]) #return 1d numpy array with two entries (row1,col1),(row2,col2))
 df.select(lambda x: x=='A', axis=1) #keep the column 'A' only 
+df.isin({'A':[1,3],'B':[2,4]})
+df[df.A<10 & df.B>10]
+df.query('colA == "Hello" & colB == "World"')
 #+END_SRC
-
-**** Three indexing methods: by label (.loc), by position(.iloc)  and advance indexing (.ix) 
+*** Query
+- A very succinct and convenient syntax 
+#+BEGIN_SRC python
+df.query('b==["a","b","c"]') #select rows where column b is the one of the specified values. 
+df.query('b in a') #select rows where column b is one of the values in column a; which is equivalent to  df[df.b.isin(df.a)]
+#+END_SRC
+- A bug makes it extremely dangerous, 
+#+BEGIN_SRC python
+df.query("A='abc'")  # This reset the columan A! '=' should be '=='
+#+END_SRC
+*** Three indexing methods: by label (.loc), by position(.iloc)  and advance indexing (.ix) 
 #+BEGIN_SRC python
 df.loc[row_idx, col_idx]
 panel.loc[item_idx, major_idx, minor_idx) #assume all for unspecified dim. 
@@ -228,9 +362,72 @@ df[colnames] #([] correponds __getitem__, selecting low-dim slice
 panel[itemnames]  
 #+END_SRC
 
-**** use at()/iat() methods for fast scalar value getting and setting([] is slow since it must handle a lot of cases) 
-**** Gotchas 
+*** use at()/iat() methods for fast scalar value getting and setting([] is slow since it must handle a lot of cases) 
+*** Gotchas 
 + df.loc[start_idx:last_idx] includes the last index but df[start_idx:last_idx] doesn't. 
+** MultiIndex(column/row)
+*** Select rows with list of values in a level 
+#+BEGIN_SRC python 
+gb = df[['date','seg','balance']].groupby(['date','seg']).agg('sum')
+gb[gb.index.get_level_values("seg").isin(["A","B"])]
+#+END_SRC
+*** Swaplevel and sortlevel
+#+BEGIN_SRC python
+gb.swaplevel("seg","date").sortlevel("seg")
+#+END_SRC
+*** flatten multi-index(rows) 
+#+BEGIN_SRC python 
+df = pd.DataFrame({'key':['a','a','b','b'], 'val1':np.arange(4), 'val2':np.arange(4)})
+gb = df.groupby('key')
+In [11]: gba = gb.agg({'val1':'size', 'val2':[np.mean,np.sum]})
+Out[11]: 
+    val2     val1
+    mean sum size
+key              
+a    0.5   1    2
+b    2.5   5    2
+In [17]: gba.columns.values
+Out[17]: array([('val2', 'mean'), ('val2', 'sum'), ('val1', 'size')], dtype=object)
+
+In [18]: gba.columns. get_level_values(0)
+Out[18]: Index([u'val2', u'val2', u'val1'], dtype='object')
+
+In [19]: gba.columns. get_level_values(1)
+Out[19]: Index([u'mean', u'sum', u'size'], dtype='object')
+
+In [20]: gba.columns = gba.columns.get_level_values(0)
+
+In [21]: gba
+Out[21]: 
+     val2  val2  val1
+key                  
+a     0.5     1     2
+b     2.5     5     2
+
+In [22]: gba['val2']
+Out[22]: 
+     val2  val2
+key            
+a     0.5     1
+b     2.5     5
+
+
+#+END_SRC
+*** Turn on/off sparse hierarchical output
+#+BEGIN_SRC python
+pd.set_option('display.multi_sparse',True)
+#+END_SRC
+*** pandas index/multi-index values may not not uniques
+
+#+BEGIN_SRC python
+df = pd.DataFrame(np.ones((3,3)), index =['A','B','C'], columns=['foo_1','foo_2', 'foo_3']).set_index(['foo_1','foo_2']).loc[(1,1),:] # this is valid and will return everything. 
+
+
+#+END_SRC
+** Insert/delete rows/columns
+df.append(dict-like) # no check for new key; so spelling error would create a new column ; also not in place. 
+df['newcol'] = series 
+del df['col']
 ** Chaining 
 #+BEGIN_SRC python
 iris=read_csv('data/iris.data')
@@ -250,11 +447,14 @@ iris.query('SepalLength > 5').assign(SepalRatio=lambda x: x.SepalWidth/x.SepalLe
 #+END_SRC
 ** exploratory data analysis
 #+BEGIN_SRC python
+df.info (): summary 
+s.value_count()
+df.dtypes  #show the dtypes for each column
 df.columns=[x.lower() for x in df.columns] #show column names in lower case; 
 df.values #access the values #for heterogeneous data, dtype will be chosen to accommodate all data invloved.
 df.get_dtype_counts() #return the number of columns of each type
 df.someColumn.str.lower #vectorized string methods are available through string attribute. Note that for the column with string, the dtype is object 
- df.convert_objects(convert_numeric=True) convert string that represents a numbedf.select_dtypes(include=['bool','int64']) #select the column of dtype bool and int64
+df.convert_objects(convert_numeric=True) convert string that represents a numbedf.select_dtypes(include=['bool','int64']) #select the column of dtype bool and int64
 df.someCol.isin([2,4,6]) #return boolean vectors to indicate whether someCol in {2,4,6}; this boolean vectors can furthur be used for slicing.
 #+END_SRC
 ** Iterator 
@@ -263,12 +463,7 @@ for idx, row in df.iterrows():
      print ('%s\n%s' % (idx,row))
 #row is a reference, change to row will also alter df. 
 #+END_SRC
-** Query
-A very succinct and convenient syntax 
-#+BEGIN_SRC python
-df.query('b==["a","b","c"]') #select rows where column b is the one of the specified values. 
-df.query('b in a') #select rows where column b is one of the values in column a; which is equivalent to  df[df.b.isin(df.a)]
-#+END_SRC
+
 ** Accelerated operations
 Pandas has support accelerating certain types of binary numerical and boolean operations using the numexpr and bottleneck libraries. 
 
@@ -276,3 +471,47 @@ Pandas has support accelerating certain types of binary numerical and boolean op
 Pandas has the following convenient features 
 + combining two overlapping dataset( A is more preferred but B has more data)
  
+** Time Series
+#+BEGIN_SRC python
+from dateutil.relativedelta import relativedelta
+
+#+END_SRC
+** Gotcha
+*** Never specify the dtype when reading in data. Instead, first read in, then convert http://stackoverflow.com/questions/15210962/specifying-dtype-with-pandas-read-csv
+#+BEGIN_SRC python
+# dont' use dtype converters explicity for the columns you care about
+# they will be converted to float64 if possible, or object if they cannot
+df = pd.read_csv('test.csv'.....)
+
+#### this is optional and related to the issue you posted ####
+# force anything that is not a numeric to nan
+# columns are the list of columns that you are interesetd in
+df[columns] = df[columns].convert_objects(convert_numeric=True)
+
+
+    # astype
+    df[columns] = df[columns].astype('float32')
+
+see http://pandas.pydata.org/pandas-docs/dev/basics.html#object-conversion
+
+Its not as efficient as doing it directly in read_csv (but that requires
+#+END_SRC
+
+* Pymssql 
+** Doc: http://www.pymssql.org/en/latest/intro.html
+** The parameter substitution of pymssql works sliently different than the python DB-API documented in https://code.google.com/p/pyodbc/wiki/Cursor. (Cf.http://stackoverflow.com/questions/23244450/cant-insert-tuple-to-mssql-db). 
+#+BEGIN_SRC python
+cursor.execute("select a from tbl where b=? and c=?", (10, 'Hello')) #Error; should change to: 
+cursor.execute("select a from tbl where b=%d and c=%s", (10, 'Hello')) # string will be properly quoted. 
+#+END_SRC
+* matplotlib
+If X-window is not setup correctly and matplotlib pylab is not working properly, try:
+** Use inline
+		%matplotlib inline
+		pylab,plot(x,y)
+		pylab.show()
+** Use non-interactive backend:   
+   import matplotlib
+   matplotlib.use('Agg')  # this should put before pylab.plot()
+   pylab.plot(x,y)
+   pylab.savefig("test.png")

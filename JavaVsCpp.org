@@ -240,7 +240,7 @@ struct B : A
 * Method Overriding
 + In java, all instance methods are virtual by default which is not the case in c++. C++, methods can be hiding or overriding. This turns out to be a source of errors. C++ introduces a new contextual keyword *override* to help.  
 * Abstract methods(Java) vs. pure virtual functions(c++)
-  Atn abstract method in Java can only be public or protected, but not private. In c++, it's perfectly valid to define a private virtual function. This c++ rule seems odd at first but perfectly sensible(for example, to implement Templated Method Pattern, Cf. /Effective c++/ Item 35.  The following example compiles and runs. Note that we can even change the access control in the subclass for pure virtual function.
+**  Atn abstract method in Java can only be public or protected, but not private. In c++, it's perfectly valid to define a private virtual function. This c++ rule seems odd at first but perfectly sensible(for example, to implement Templated Method Pattern, Cf. /Effective c++/ Item 35.  The following example compiles and runs. Note that we can even change the access control in the subclass for pure virtual function.
 	#+BEGIN_SRC c++
 	#include <iostream>
 	using namespace std;
@@ -266,8 +266,41 @@ struct B : A
 
 
 	#+END_SRC
+** Both in C++ and Java, when implementing the virtual function/abstract method, the argument must be the same, subclass is error. That is if it is void f(Base b) in the interface, the overriding cannot be f(Subclass) (Cf. learningnotes/java/OverrideExampleMain.java and learningnotes/c++/OverrideExampleMain.cpp).  Therefore we often see this in the spirit of "programming to interface not implementation":
+  #+BEGIN_SRC java 
+  	public class OverrideExampleImpl implements OverrideExampleInterface{
+		public OverrideExampleImpl(){}
+		public void print(Base arg){  //this function print overrides the base; Even though this concrete class only handles Integers, it is still needs to put Base in the arg signature in order to override the parent abstract method. And use "instanceof" and casting to case the arg to Integer. 
+			if (arg instanceof Integer){
+				arg = (Integer) arg;
+				System.out.println(arg);
+			}
+			System.out.println("In overrideExampleImpl");
+		}
+	}
+  #+END_SRC 
 
-
+** On the other hand(for both C++ and Java), if there are two function in the same class, void f(Base*), and void f(Subclass*), and call f(e) will call void f(Subclass*) if e is Subclass*; That's when calling a function, A reasonable lookup and casting will act behind the scene to make sure the right function get called(Cf.learningnotes/java/OverrideExampleMain2.java and learningnotes/c++/OverrideExampleMain2.cpp) 
+#+BEGIN_SRC java
+public void go(){
+		//sgu:OverrideExampleInterface objj = new OverrideExampleImpl(); #if we use this line instead of the one below, it will call print(Object); LineA
+		OverrideExampleImpl objj = new OverrideExampleImpl(); //sgu: if we use this line instead of the one above, it will call print(Integer); LineB
+		objj.print(new Integer(10)); //If we use LineB instead of Line A, it will always calls print(Object);	   
+	}
+	public class OverrideExampleImpl implements OverrideExampleInterface{
+		public OverrideExampleImpl(){}
+		public void print(Object arg){ 
+			if (arg instanceof Integer){
+				arg = (Integer) arg;
+				System.out.println(arg);
+			}
+			System.out.println("In overrideExampleImpl::print(Object arg)");
+		}
+		public void print(Integer arg){  
+			System.out.println("In overrideExampleImpl::print(Integer arg)");
+		}
+	}
+#+END_SRC
 * Destructors(C++) vs. Finalizer(Java)
 + In c++ destructors are automatically call in the reverse order of construction. In java, finalizer() are not automatically chained, subclass needs to call super.final() explicitly. 
 
