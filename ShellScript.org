@@ -18,7 +18,7 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
 + Piping with stdin redirection. Without the stdin redirection, emacs complains the stdin is not tty. The "$@" is a [[http://unixhelp.ed.ac.uk/scrpt/scrpt2.2.2.html][Special Shell Variables]] which is a string containing all arguments to the shell 
   #+BEGIN_SRC shell
   ls prod_JP*|xargs zsh -c 'emacs "$@"</dev/tty'
-  #+END_SRC
+  #+END_SRC 
 * Utilities
 ** /find/ (Cf. [fn:2]):
 + -exec 
@@ -27,6 +27,10 @@ for i in {1..12}; do scp -i /tmp/tmp_pem hadoop@ec2host.com://path/to/file1_${i}
     find / -name core -exec /bin/rm -f '{}' \;
     find / -name core -exec /bin/rm -f '{}' +
     find / -name core | xargs /bin/rm -f
+    find . -maxdepth 1 -type d  -user o643799 -exec bash -c 'cd "$0"; rm -R -- */; rm -rf el_merge_monthly*' {} \;
+ 
+##Note the -- (thanks for adding that, Stephane) which separates options from arguments and allows one to remove entries starting with a hyphen - otherwise after expansion by the shell the entry name would be interpreted as an option by rm (the same holds for many other command line utilities).
+http://unix.stackexchange.com/questions/68846/how-do-i-remove-all-sub-directories-from-within-a-directory
   #+END_SRC
     - There are two forms of -exec;. The form ‑exec {} \; (The semicolon must be quoted from the shell, so find can see it!)  With the -exec{} \; the word “{}” will expand out to the name of the found file, the semicolon means the command runs for each match file;. An alternate of the semicolon is  a plus-sign +. This form runs the command once for all files    (xargs[fn:4],  which together with "-L" options, gives more flexibility of how to group the arguments into sets)[fn:3] [fn:2]
     + To handle exotic filenames(which contain spaces or newlines), use the form "find .. -print0|xargs -0 ..."
@@ -153,6 +157,7 @@ Sometimes we think in terms of word and want the match for the whole word. In th
    #+END_SRC
    The sed command 's/\t/,/g' replace tab with comma and 's/,,/, ,/g' fills in the missing field with a space. Note that without the fill-in step, the alignment is wrong. 
 ** /awk/
+A good tutorial: http://www.grymoire.com/Unix/Awk.html#uh-1
 *** Randomly Sample 1/1000 row. 
 #+BEGIN_SRC bash
 awk 'BEGIN {srand()} !/^$/ { if (rand() <= .001) print $0}' infile.txt> outfile.txt 
@@ -182,6 +187,11 @@ FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the
 1{print}
 ' input-blob*.csv > input-all.csv
 #+END_SRC
+*** replace the commas inside quotes
+#+BEGIN_SRC shell
+#### -v key=values change the program variables; OFS is the output field separator; without -v OFS='"', the double quotes would be gone in the output.  
+ awk -F'"' -v OFS='"' '{ for (i=2; i<=NF; i+=2) gsub(",", "", $i) } 1' tmp.txt
+#+END_SRC
 ** /paste/
 *** Concatenate files columnwise  
 #+BEGIN_SRC zsh
@@ -191,6 +201,16 @@ FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the
 ### "-v OFS=','" inserts comma between fields on output
 paste -d, file1.csv, file2.csv, file2.csv|awk -F, -v OFS=',' '{print $1,$2, $4}'
 #+END_SRC
+* Package Management
+** list all installed package 
+apt list --installed (for ubuntu 14.04)
+** List all files installed by a package 
+dpkg-query -L openjdk-8-jdk
+** switch version
+sudo update-alternatives --config javac
+which lists all alternatives and prompts which version to switch to
+
+
 * Footnotes
 
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]
