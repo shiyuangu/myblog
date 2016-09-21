@@ -43,3 +43,19 @@ root
  |-- features: vector (nullable = true)
 
 #+END_SRC
+* Spark MLlib
+** Vector and Array 
+#+BEGIN_SRC python 
+In [94]: v1
+Out[94]: DenseVector([0.0, 1.1, 0.1])
+
+In [95]: v2 = 
+KeyboardInterrupt
+
+In [95]: v2 = Vectors.dense([0.0, 1.1, -.1])
+
+In [96]: rv = sc.parallelize([v1,v2])
+
+In [97]: rv
+Out[97]: ParallelCollectionRDD[149] at parallelize at PythonRDD.scala:475
+#+END_SRC
