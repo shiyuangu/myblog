@@ -1,0 +1,45 @@
+* Spark SQL
+** Create DataFrame
+pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0).  
+
+#+BEGIN_SRC python 
+from pyspark.sql import SparkSession
+from pyspark.sql import Row
+spark = SparkSession.builder.appName("PythonSQL").config("spark.some.config.option","some-value").getOrCreate()
+lines = sc.textFile("people.txt")
+parts = lines.map(lambda l: l.split(","))
+people = parts.map(lambda p: Row(name = p[0], age= int(p[1])))
+schemaPeople = spark.createDataFrame(people)
+type(schemaPeople)  #Dataframe
+schemaPeople.show()
+schemaPeople.createOrReplaceTempView("people") #so that we can query the table through the SQL as follows. 
+teenagers= spark.sql("SELECT name FROME people where age >=13 and age <=19")
+teenagers= spark.sql("SELECT name FROM people where age >=13 and age <=19")
+type(teenagers) #Dataframe
+teenNames = teenagers.rdd.map(lambda: "Name: " + p.name)  #teenNames is a RDD
+#+END_SRC
+** Schema 
+*** print 
+#+BEGIN_SRC python 
+from pyspark.ml.feature import HashingTF, Tokenizer
+training = spark.createDataFrame([
+    (0L, "a b c d e spark", 1.0),
+    (1L, "b d", 0.0),
+    (2L, "spark f g h", 1.0),
+    (3L, "hadoop mapreduce", 0.0)], ["id", "text", "label"])
+tokenizer = Tokenizer(inputCol="text", outputCol="words")
+hashingTF = HashingTF(inputCol=tokenizer.getOutputCol(), outputCol="features")
+rv = tokenizer.fit(training)
+rv2 = hashingTF.transform(rv)
+In [92]: type(rv2)
+Out[92]: pyspark.sql.dataframe.DataFrame
+In [90]: rv2.printSchema()
+root
+ |-- id: long (nullable = true)
+ |-- text: string (nullable = true)
+ |-- label: double (nullable = true)
+ |-- words: array (nullable = true)
+ |    |-- element: string (containsNull = true)
+ |-- features: vector (nullable = true)
+
+#+END_SRC
