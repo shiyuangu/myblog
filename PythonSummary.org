@@ -270,7 +270,25 @@ args=dict(A=1, B=2);
 setup(**args) ##equivalent to passing in A=1, B=2
 #+END_SRC 
 
-* Using Python for Text Parsing 
+* Using Python for Text Parsing
+** regex
+#+BEGIN_SRC python
+#look for the first match of number sequence(greedy). Note that re.search could start the match from any position while re.search always match from begining; Also, use +? for the nongreedy version 
+m=re.search('(\d+)',"abc_2004-Q1.csv") 
+m.group(1)  #2004
+m=re.search('(\d+?)',"abc_2004-Q1.csv") 
+m.group(1) #2
+#+END_SRC 
+
+* Exceptions: 
+#+BEGIN_SRC python 
+try:
+    s = dfi[col].astype(np.float64)
+except:
+    print "\tERROR:some info"
+    raise     #re rasie the last exception
+
+#+END_SRC
 * NumPy
 ** view vs copy 
 *** simply indexing return view and advance indexing returns copy 
