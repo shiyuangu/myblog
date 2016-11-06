@@ -1,3 +1,5 @@
+* Spark
+
 * Spark SQL
 ** Create DataFrame
 pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0).  
