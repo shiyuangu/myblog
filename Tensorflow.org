@@ -136,11 +136,219 @@ In some case, the input tensor might be of rank 1 (=train_inputs=) and the outpu
                      num_classes=vocabulary_size))
 
 #+END_SRC
+* Add operation node to the graph 
+The way the Tensorflow API is designed, library routines that create new operation nodes always attach nodes to the default graph. In fact, =value+1= or =reduce(value2)= adds new nodes to the graph (as demonstrated below). Interactive debugging needs to be careful not to create unintended new nodes to the graph. 
+#+BEGIN_SRC python
+In [1]: import tensorflow as tf
+In [2]: graph=tf.get_default_graph()
+In [3]: graph.as_graph_def()
+Out[3]: 
+versions {
+  producer: 17
+}
+In [4]: value = tf.constant(1)
+In [5]: graph.as_graph_def()
+Out[5]: 
+node {
+  name: "Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+versions {
+  producer: 17
+}
+In [6]: value2=value+1
+In [7]: graph.as_graph_def()
+Out[7]: 
+node {
+  name: "Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "add/y"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "add"
+  op: "Add"
+  input: "Const"
+  input: "add/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+versions {
+  producer: 17
+}
+In [8]: tf.reduce_mean(value)
+Out[8]: <tf.Tensor 'Mean:0' shape=() dtype=int32>
+In [9]: graph.as_graph_def()
+Out[9]: 
+node {
+  name: "Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "add/y"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "add"
+  op: "Add"
+  input: "Const"
+  input: "add/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "Const_1"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "Mean"
+  op: "Mean"
+  input: "Const"
+  input: "Const_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+versions {
+  producer: 17
+}
+
+#+END_SRC
 * Sample code to visualization embedding vector 
 This is an sample code to visualize MNIST hidden vector in Tensorboard
 https://github.com/tensorflow/tensorflow/issues/6322
 This is an sample code to visualize word2vec in Tensorboard:
 https://github.com/shiyuangu/tensorflow/blob/master/tensorflow/examples/tutorials/word2vec/word2vec_basic.py
+
+
 
 
 
