@@ -1,0 +1,147 @@
+#+BLOG: wordpress
+#+POSTID: 123
+-----------------------
+#+TITLE: Study Note: Tensorflow
+#+DATE:  <2017-01-07 Sun>
+#+CATEGORY: Machine Learning
+-----------------------
+* Tensor vs. Variable, Constant, Node
++ Base on [[http://stackoverflow.com/questions/37849322/how-to-understand-the-term-tensor-in-tensorflow]], /There is no notion of Tensor in the underlying graph that's executed by the runtime/. Instead the Graph consists of op nodes connected to eacth other, representing operations. An operation allocates memory for its outputs which are available on endpoints :0, :1, ect, and you an think of each of these endpoints as a Tensor. If we want to extend tensorflow, we need to define new operations during which we deal with tensors: https://www.tensorflow.org/how_tos/adding_an_op/. Furthermore, a tensor can be referred to through op:port, 
+#+BEGIN_SRC python 
+    #code excerpt from https://github.com/tensorflow/tensorflow/issues/6322
+    # Hidden 1
+    with tf.name_scope('hidden1'):
+      weights = tf.Variable(
+          tf.truncated_normal([IMAGE_PIXELS, hidden1_units],
+                            stddev=1.0 / math.sqrt(float(IMAGE_PIXELS))),
+          name='weights')
+       biases = tf.Variable(tf.zeros([hidden1_units]),name='biases')
+    hidden1 = tf.nn.relu(tf.matmul(images, weights) + biases)
+    //....
+    hidden1_outputs = tf.get_default_graph().get_tensor_by_name('hidden1/add:0')    
+#+END_SRC
+
++ Variables is an operation. We can think of a variable as representing trainable parameters. http://stackoverflow.com/questions/38556078/in-tensorflow-what-is-the-difference-between-a-variable-and-a-tensor. However, we can also define non-trainable Variable like in the following use case
+#+BEGIN_SRC python 
+global_step = tf.Variable(0, name='global_step', trainable=False)
+train_op = optimizer.minimize(loss, global_step=global_step)
+#+END_SRC
+
++ The term Tensor and Variable are used differently in Python and C++ API. 
+https://stackoverflow.com/questions/40866675/implementation-difference-between-tensorflow-variable-and-tensorflow-tensor
+
++ Why use tf.constant()? 
+For efficiency, readability(of the graph). 
+http://stackoverflow.com/questions/39512276/tensorflow-simple-operations-tensors-vs-python-variables
+
+* The shape of tensors 
+ 
+Cf.  https://stackoverflow.com/questions/39090222/tensorflow-single-value-vs-batch-tensors
+In the MNIST example, the input tensor is of shape (100, 784) where 100 is the batch size. The output tensor is of shape (100,) since the target ($y$) is just one number indicating the class (0-9). Since input data is fed by a batch in each iteration, it's typical to apply reduction when computing loss ( =tf.reduce_mean=, as shown below). The first dimension of the tensors of the hidden layer also matches the batch size(see the example below)  
+#+BEGIN_SRC python 
+#examples/tutorials/mnist/fully_connected_feed.py
+def placeholder_inputs(batch_size):
+  """Generate placeholder variables to represent the input tensors.
+
+  These placeholders are used as inputs by the rest of the model building
+  code and will be fed from the downloaded data in the .run() loop, below.
+
+  Args:
+    batch_size: The batch size will be baked into both placeholders.
+
+  Returns:
+    images_placeholder: Images placeholder.
+    labels_placeholder: Labels placeholder.
+  """
+  # Note that the shapes of the placeholders match the shapes of the full
+  # image and label tensors, except the first dimension is now batch_size
+  # rather than the full size of the train or test data sets.
+  images_placeholder = tf.placeholder(tf.float32, shape=(batch_size,
+                                                         mnist.IMAGE_PIXELS))
+  labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size))
+  return images_placeholder, labels_placeholder
+
+feed_dict = fill_feed_dict(data_set,images_placeholder,labels_placeholder)
+
+In [1]: feed_dict
+Out[1]: 
+{<tf.Tensor 'Placeholder:0' shape=(100, 784) dtype=float32>: array([[ 0.,  0.,  0., ...,  0.,  0.,  0.],
+        [ 0.,  0.,  0., ...,  0.,  0.,  0.],
+        [ 0.,  0.,  0., ...,  0.,  0.,  0.],
+        ..., 
+        [ 0.,  0.,  0., ...,  0.,  0.,  0.],
+        [ 0.,  0.,  0., ...,  0.,  0.,  0.],
+        [ 0.,  0.,  0., ...,  0.,  0.,  0.]], dtype=float32),
+ <tf.Tensor 'Placeholder_1:0' shape=(100,) dtype=int32>: array([5, 6, 5, 1, 3, 1, 2, 0, 9, 3, 5, 1, 9, 2, 2, 3, 6, 5, 4, 1, 6, 4, 9,
+        9, 0, 0, 2, 8, 9, 2, 9, 9, 5, 9, 9, 4, 3, 7, 8, 5, 5, 1, 8, 5, 0, 3,
+        8, 8, 1, 9, 3, 5, 0, 3, 2, 5, 6, 3, 6, 5, 7, 8, 7, 0, 8, 1, 6, 3, 3,
+        4, 0, 8, 7, 7, 7, 5, 7, 6, 0, 5, 7, 5, 1, 3, 6, 0, 1, 1, 7, 7, 5, 5,
+        1, 0, 3, 0, 9, 5, 0, 4], dtype=uint8)}
+
+def loss(logits, labels):
+  """Calculates the loss from the logits and the labels.
+
+  Args:
+    logits: Logits tensor, float - [batch_size, NUM_CLASSES].
+    labels: Labels tensor, int32 - [batch_size].
+
+  Returns:
+    loss: Loss tensor of type float.
+  """
+  labels = tf.to_int64(labels)
+  # sgu: cross_entropy.get_shape(): TensorShape([Dimension(100)]) where 100 is the batch_size 
+  cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
+      labels=labels, logits=logits, name='xentropy') 
+  return tf.reduce_mean(cross_entropy, name='xentropy_mean')
+
+#sgu: due to the tf.reduce_mean, loss now is just a number(i.e., 0-D tensor)
+loss = mnist.loss(logits, labels_placeholder) #loss.get_shape(): TensorShape([])
+
+# Get the outputs before the ReLU.
+# hidden1_outputs.get_shape(): TensorShape([Dimension(100), Dimension(128)])
+# where 100 is the batch size and 128 is the dimension in the hidden1 layer,
+# i.e., 128 features are extracted in hidden1
+hidden1_outputs = tf.get_default_graph().get_tensor_by_name('hidden1/add:0') 
+#+END_SRC
+
+In some case, the input tensor might be of rank 1 (=train_inputs=) and the output tensor (=train_labels=) would be rank 2.  This is not a problem as long as the operations can consume them. In the sample code below, =tf.nn.embedding_lookup= and  =tf.nn.nce_loss= require the arguments of those shapes.  
+#+BEGIN_SRC python 
+#example/tutorials/word2vec/word2vec_basic.py. 
+    #sgu train_inputs.get_shape(): TensorShape([Dimension(32)]) where 32 is the batch_size 
+    train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
+    train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1]) #nce_loss requires train_lables to be rank 2 
+    embeddings = tf.Variable(
+               tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
+
+    #sgu embed.get_shape(): TensorShape([Dimension(50000), Dimension(128)]) where 50000 is the vocab size and 128 is the embedding_size. 
+
+    #sgu:embed.get_shape(): TensorShape([Dimension(32), Dimension(128)]) 
+    #sgu: where 32 is the batch_size and 128 is the dimension size
+    embed = tf.nn.embedding_lookup(embeddings, train_inputs) 
+
+    # Construct the variables for the NCE loss
+    nce_weights = tf.Variable(
+        tf.truncated_normal([vocabulary_size, embedding_size],
+                            stddev=1.0 / math.sqrt(embedding_size)))
+    nce_biases = tf.Variable(tf.zeros([vocabulary_size]))
+
+  #sgu: loss is a scalar, ie, a tensor of rank 0
+  #loss.get_shape: TensorShape([])
+  loss = tf.reduce_mean(
+      tf.nn.nce_loss(weights=nce_weights,
+                     biases=nce_biases,
+                     labels=train_labels,
+                     inputs=embed,
+                     num_sampled=num_sampled,
+                     num_classes=vocabulary_size))
+
+#+END_SRC
+* Sample code to visualization embedding vector 
+This is an sample code to visualize MNIST hidden vector in Tensorboard
+https://github.com/tensorflow/tensorflow/issues/6322
+This is an sample code to visualize word2vec in Tensorboard:
+https://github.com/shiyuangu/tensorflow/blob/master/tensorflow/examples/tutorials/word2vec/word2vec_basic.py
+
+
+
+
