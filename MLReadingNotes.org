@@ -1,0 +1,19 @@
+-----------------------
+#+TITLE: Machine Learning Literature Reading Notes 
+#+DATE: <2017-01-09>
+#+CATEGORY: Machine Learning
+-----------------------
+* Neural Networks, Manifolds, and Topology 
+http://colah.github.io/posts/2014-03-NN-Manifolds-Topology/
+Summary:
+** Separation plane is linear in the last layer of NN  
+Consider we build a NN for classification(2 class).  The output from the last layer(softmax) is $(p1,p2)$, we class point x to be class 1 if p1>p2. So the separation is linear. 
+** NN training is actually process of /ambient isotopy/
+Author sketch the theorem that there is an /ambient isotopy/ between network input and output if $W$ is non-degenerated. 
+** Manifold hypothesis
+All 'natural' data is a Manifold. This paper:
+[[https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=7&cad=rja&uact=8&ved=0ahUKEwjEpK7Dp7bRAhWpxVQKHYYeBqYQFggrMAY&url=http%3A%2F%2Fmath.uchicago.edu%2F~shmuel%2FAAT-readings%2FData%2520Analysis%2520%2Fmumford-carlsson%2520et%2520al.pdf&usg=AFQjCNHzGmodo5BeLJzRqiKYx5B4KhqP6g&sig2=a4W6lbuxAp1IpaL65W7O5Q&bvm=bv.143423383,d.cGw][On the Local Behavior of Spaces of Natural Images]] shows 3x3 high contract image is actually forms a Klein bottle. 
+** NN classification is knot untangling 
+** sgu
+This articles ties classification to knot untangling. Untangling is done in a higher dimensional spaces (as shown by the examples) and hence this perspective cannot explain why NN usually uses hidden layers of smaller dimensions. Other research suggests hidden layers corresponds to features. So maybe a more complete view of NN is first learning features (in lower-dimensional space) and then lift it to higher-dimensional space for linear separation. 
+
