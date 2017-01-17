@@ -103,7 +103,9 @@ class PTBModel(object):
     state = self._initial_state
     with tf.variable_scope("RNN"):
       for time_step in range(num_steps):
-        #sgu: All LSTMs share the same weights/bias varibles.There are num_steps LSTM cells(MultiRNNCell); each MultiRNN has two layers. 
+        #sgu: the function call cell(..) actually creates the ops in the graph. 
+        #sgu: Note that cell(..) uses tf.get_variable(..) to create the weights/bias and hence
+        #sgu: all LSTMs share the same weights/bias varibles. There are num_steps LSTM cells(MultiRNNCell); each MultiRNN has two layers. 
         #sgu: for valid/test, the reuse = True has been set and hence the if below has no effect. 
         if time_step > 0: tf.get_variable_scope().reuse_variables()
         (cell_output, state) = cell(inputs[:, time_step, :], state)
