@@ -26,6 +26,30 @@
 global_step = tf.Variable(0, name='global_step', trainable=False)
 train_op = optimizer.minimize(loss, global_step=global_step)
 #+END_SRC
+However, the "Variables" referred in the tensorflow doc are not the same as memory holding values (as in programming language). In a tf NN, many other tensors are not "Variable". For example, =hidden1_outputs= in the snippet above is not a variable. To get all variables in the graph, 
+#+BEGIN_SRC python 
+#for the MNIST network in tutorial: 
+In [2]: lv = tf.get_collection(tf.GraphKeys.VARIABLES)
+In [4]: [v.name for v in lv]
+Out[4]: 
+[u'hidden1/weights:0',
+ u'hidden1/biases:0',
+ u'hidden2/weights:0',
+ u'hidden2/biases:0',
+ u'softmax_linear/weights:0',
+ u'softmax_linear/biases:0',
+ u'global_step:0']
+
+In [13]: lvt = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+In [14]: [v.name for v in lvt]
+Out[14]: 
+[u'hidden1/weights:0',
+ u'hidden1/biases:0',
+ u'hidden2/weights:0',
+ u'hidden2/biases:0',
+ u'softmax_linear/weights:0',
+ u'softmax_linear/biases:0']
+#+END_SRC
 
 + The term Tensor and Variable are used differently in Python and C++ API. 
 https://stackoverflow.com/questions/40866675/implementation-difference-between-tensorflow-variable-and-tensorflow-tensor
@@ -35,7 +59,7 @@ For efficiency, readability(of the graph).
 http://stackoverflow.com/questions/39512276/tensorflow-simple-operations-tensors-vs-python-variables
 
 * The shape of tensors 
- 
+ The first dimension of the input tensor and output tensor is the batch size. 
 Cf.  https://stackoverflow.com/questions/39090222/tensorflow-single-value-vs-batch-tensors
 In the MNIST example, the input tensor is of shape (100, 784) where 100 is the batch size. The output tensor is of shape (100,) since the target ($y$) is just one number indicating the class (0-9). Since input data is fed by a batch in each iteration, it's typical to apply reduction when computing loss ( =tf.reduce_mean=, as shown below). The first dimension of the tensors of the hidden layer also matches the batch size(see the example below)  
 #+BEGIN_SRC python 
@@ -342,6 +366,54 @@ versions {
 }
 
 #+END_SRC
+* Inspect the Graph
+#+BEGIN_SRC python
+# Q: what happen when name_scope intervenes with variable_scope
+with tf.name_scope("ns"):
+    with tf.variable_scope("vs"):
+        v1 = tf.get_variable("v1",[1.0]) 
+        v2 = tf.Variable([2.],name="v2")
+        v3 = v1+v2
+v1.name  #vs/v1:0
+v2.name  #ns/vs/v1:0
+v3.name  #ns/vs/add:0 
+
+#list all the node
+l = [n for n in tf.get_default_graph().as_graph_def().node] 
+[(ll.name,ll.op) for  ll in l]
+
+In [12]: g  = tf.get_default_graph()
+In [13]: op = g.get_operation_by_name("ns/vs/add")
+In [14]: op.node_def
+Out[14]: 
+name: "ns/vs/add"
+op: "Add"
+input: "vs/v1/read"
+input: "ns/vs/v2/read"
+attr {
+  key: "T"
+  value {
+    type: DT_FLOAT
+  }
+}
+#get the output tensor of an op 
+t = g.get_tensor_by_name("ns/vs/add:0") 
+assert t==v3
+
+#+END_SRC
+* Name Scope vs. Variable Scope:
+#+BEGIN_SRC python 
+with tf.name_scope("ns"):
+    with tf.variable_scope("vs"):
+        v1 = tf.get_variable("v1",[1.0]) 
+        v2 = tf.Variable([2.],name="v2")
+        v3 = v1+v2
+v1.name  #vs/v1:0
+v2.name  #ns/vs/v1:0
+v3.name  #ns/vs/add:0 
+#+END_SRC
+* Interactive Session vs. Session 
+http://stackoverflow.com/questions/40645952/tensorflow-is-it-always-more-convenient-to-use-interactivesession-compared-to?noredirect=1&lq=1
 * Sample code to visualization embedding vector 
 This is an sample code to visualize MNIST hidden vector in Tensorboard
 https://github.com/tensorflow/tensorflow/issues/6322
