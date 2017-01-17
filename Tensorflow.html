@@ -1,0 +1,691 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Study Note: Tensorflow</title>
+<!-- 2017-01-16 Mon 19:24 -->
+<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta  name="generator" content="Org-mode" />
+<meta  name="author" content="sgu" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: 'sh'; }
+  pre.src-bash:before  { content: 'sh'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-R:before     { content: 'R'; }
+  pre.src-perl:before  { content: 'Perl'; }
+  pre.src-java:before  { content: 'Java'; }
+  pre.src-sql:before   { content: 'SQL'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.right  { text-align: center;  }
+  th.left   { text-align: center;   }
+  th.center { text-align: center; }
+  td.right  { text-align: right;  }
+  td.left   { text-align: left;   }
+  td.center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara:nth-child(2) { display: inline; }
+  .footpara { display: block; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+<script type="text/javascript" src="http://orgmode.org/mathjax/MathJax.js"></script>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+    MathJax.Hub.Config({
+        // Only one of the two following lines, depending on user settings
+        // First allows browser-native MathML display, second forces HTML/CSS
+        //  config: ["MMLorHTML.js"], jax: ["input/TeX"],
+            jax: ["input/TeX", "output/HTML-CSS"],
+        extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js",
+                     "TeX/noUndefined.js"],
+        tex2jax: {
+            inlineMath: [ ["\\(","\\)"] ],
+            displayMath: [ ['$$','$$'], ["\\[","\\]"], ["\\begin{displaymath}","\\end{displaymath}"] ],
+            skipTags: ["script","noscript","style","textarea","pre","code"],
+            ignoreClass: "tex2jax_ignore",
+            processEscapes: false,
+            processEnvironments: true,
+            preview: "TeX"
+        },
+        showProcessingMessages: true,
+        displayAlign: "center",
+        displayIndent: "2em",
+
+        "HTML-CSS": {
+             scale: 100,
+             availableFonts: ["STIX","TeX"],
+             preferredFont: "TeX",
+             webFont: "TeX",
+             imageFont: "TeX",
+             showMathMenu: true,
+        },
+        MMLorHTML: {
+             prefer: {
+                 MSIE:    "MML",
+                 Firefox: "MML",
+                 Opera:   "HTML",
+                 other:   "HTML"
+             }
+        }
+    });
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Study Note: Tensorflow</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. Tensor vs. Variable, Constant, Node</a></li>
+<li><a href="#sec-2">2. The shape of tensors</a></li>
+<li><a href="#sec-3">3. Add operation node to the graph</a></li>
+<li><a href="#sec-4">4. Inspect the Graph</a></li>
+<li><a href="#sec-5">5. Name Scope vs. Variable Scope:</a></li>
+<li><a href="#sec-6">6. Interactive Session vs. Session</a></li>
+<li><a href="#sec-7">7. Sample code to visualization embedding vector</a></li>
+</ul>
+</div>
+</div>
+<hr  />
+<hr  />
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Tensor vs. Variable, Constant, Node</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>Base on <a href="http://stackoverflow.com/questions/37849322/how-to-understand-the-term-tensor-in-tensorflow">http://stackoverflow.com/questions/37849322/how-to-understand-the-term-tensor-in-tensorflow</a>, <i>There is no notion of Tensor in the underlying graph that's executed by the runtime</i>. Instead the Graph consists of op nodes connected to eacth other, representing operations. An operation allocates memory for its outputs which are available on endpoints :0, :1, ect, and you an think of each of these endpoints as a Tensor. If we want to extend tensorflow, we need to define new operations during which we deal with tensors: <a href="https://www.tensorflow.org/how_tos/adding_an_op/">https://www.tensorflow.org/how_tos/adding_an_op/</a>. Furthermore, a tensor can be referred to through op:port, 
+</li>
+</ul>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #b22222;">#</span><span style="color: #b22222;">code excerpt from https://github.com/tensorflow/tensorflow/issues/6322</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">Hidden 1</span>
+<span style="color: #a020f0;">with</span> tf.name_scope(<span style="color: #8b2252;">'hidden1'</span>):
+  <span style="color: #000000; background-color: #ffffff;">weights</span> = tf.Variable(
+      tf.truncated_normal([IMAGE_PIXELS, hidden1_units],
+                        <span style="color: #000000; background-color: #ffffff;">stddev</span>=<span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span> / math.sqrt(float(IMAGE_PIXELS))),
+      <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">'weights'</span>)
+   <span style="color: #000000; background-color: #ffffff;">biases</span> = tf.Variable(tf.zeros([hidden1_units]),<span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">'biases'</span>)
+<span style="color: #000000; background-color: #ffffff;">hidden1</span> = tf.nn.relu(tf.matmul(images, weights) + biases)
+//....
+<span style="color: #000000; background-color: #ffffff;">hidden1_outputs</span> = tf.get_default_graph().get_tensor_by_name(<span style="color: #8b2252;">'hidden1/add:0'</span>)
+</pre>
+</div>
+
+<ul class="org-ul">
+<li>Variables is an operation. We can think of a variable as representing trainable parameters. <a href="http://stackoverflow.com/questions/38556078/in-tensorflow-what-is-the-difference-between-a-variable-and-a-tensor">http://stackoverflow.com/questions/38556078/in-tensorflow-what-is-the-difference-between-a-variable-and-a-tensor</a>. However, we can also define non-trainable Variable like in the following use case
+</li>
+</ul>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #000000; background-color: #ffffff;">global_step</span> = tf.Variable(<span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">'global_step'</span>, <span style="color: #000000; background-color: #ffffff;">trainable</span>=<span style="color: #a020f0;">False</span>)
+<span style="color: #000000; background-color: #ffffff;">train_op</span> = optimizer.minimize(loss, <span style="color: #000000; background-color: #ffffff;">global_step</span>=global_step)
+</pre>
+</div>
+<p>
+However, the "Variables" referred in the tensorflow doc are not the same as memory holding values (as in programming language). In a tf NN, many other tensors are not "Variable". For example, <code>hidden1_outputs</code> in the snippet above is not a variable. To get all variables in the graph, 
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #b22222;">#</span><span style="color: #b22222;">for the MNIST network in tutorial: </span>
+In [<span style="color: #000000; background-color: #ffffff;">2</span>]: <span style="color: #000000; background-color: #ffffff;">lv</span> = tf.get_collection(tf.GraphKeys.VARIABLES)
+In [<span style="color: #000000; background-color: #ffffff;">4</span>]: [v.name <span style="color: #a020f0;">for</span> v <span style="color: #a020f0;">in</span> lv]
+Out[<span style="color: #000000; background-color: #ffffff;">4</span>]: 
+[u<span style="color: #8b2252;">'hidden1/weights:0'</span>,
+ u<span style="color: #8b2252;">'hidden1/biases:0'</span>,
+ u<span style="color: #8b2252;">'hidden2/weights:0'</span>,
+ u<span style="color: #8b2252;">'hidden2/biases:0'</span>,
+ u<span style="color: #8b2252;">'softmax_linear/weights:0'</span>,
+ u<span style="color: #8b2252;">'softmax_linear/biases:0'</span>,
+ u<span style="color: #8b2252;">'global_step:0'</span>]
+
+In [<span style="color: #000000; background-color: #ffffff;">13</span>]: <span style="color: #000000; background-color: #ffffff;">lvt</span> = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+In [<span style="color: #000000; background-color: #ffffff;">14</span>]: [v.name <span style="color: #a020f0;">for</span> v <span style="color: #a020f0;">in</span> lvt]
+Out[<span style="color: #000000; background-color: #ffffff;">14</span>]: 
+[u<span style="color: #8b2252;">'hidden1/weights:0'</span>,
+ u<span style="color: #8b2252;">'hidden1/biases:0'</span>,
+ u<span style="color: #8b2252;">'hidden2/weights:0'</span>,
+ u<span style="color: #8b2252;">'hidden2/biases:0'</span>,
+ u<span style="color: #8b2252;">'softmax_linear/weights:0'</span>,
+ u<span style="color: #8b2252;">'softmax_linear/biases:0'</span>]
+</pre>
+</div>
+
+<ul class="org-ul">
+<li>The term Tensor and Variable are used differently in Python and C++ API. 
+</li>
+</ul>
+<p>
+<a href="https://stackoverflow.com/questions/40866675/implementation-difference-between-tensorflow-variable-and-tensorflow-tensor">https://stackoverflow.com/questions/40866675/implementation-difference-between-tensorflow-variable-and-tensorflow-tensor</a>
+</p>
+
+<ul class="org-ul">
+<li>Why use tf.constant()? 
+</li>
+</ul>
+<p>
+For efficiency, readability(of the graph). 
+<a href="http://stackoverflow.com/questions/39512276/tensorflow-simple-operations-tensors-vs-python-variables">http://stackoverflow.com/questions/39512276/tensorflow-simple-operations-tensors-vs-python-variables</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> The shape of tensors</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+ The first dimension of the input tensor and output tensor is the batch size. 
+Cf.  <a href="https://stackoverflow.com/questions/39090222/tensorflow-single-value-vs-batch-tensors">https://stackoverflow.com/questions/39090222/tensorflow-single-value-vs-batch-tensors</a>
+In the MNIST example, the input tensor is of shape (100, 784) where 100 is the batch size. The output tensor is of shape (100,) since the target (\(y\)) is just one number indicating the class (0-9). Since input data is fed by a batch in each iteration, it's typical to apply reduction when computing loss ( <code>tf.reduce_mean</code>, as shown below). The first dimension of the tensors of the hidden layer also matches the batch size(see the example below)  
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #b22222;">#</span><span style="color: #b22222;">examples/tutorials/mnist/fully_connected_feed.py</span>
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">placeholder_inputs</span>(batch_size):
+  <span style="color: #8b2252;">"""Generate placeholder variables to represent the input tensors.</span>
+
+<span style="color: #8b2252;">  These placeholders are used as inputs by the rest of the model building</span>
+<span style="color: #8b2252;">  code and will be fed from the downloaded data in the .run() loop, below.</span>
+
+<span style="color: #8b2252;">  Args:</span>
+<span style="color: #8b2252;">    batch_size: The batch size will be baked into both placeholders.</span>
+
+<span style="color: #8b2252;">  Returns:</span>
+<span style="color: #8b2252;">    images_placeholder: Images placeholder.</span>
+<span style="color: #8b2252;">    labels_placeholder: Labels placeholder.</span>
+<span style="color: #8b2252;">  """</span>
+  <span style="color: #b22222;"># Note that the shapes of the placeholders match the shapes of the full</span>
+  <span style="color: #b22222;"># image and label tensors, except the first dimension is now batch_size</span>
+  <span style="color: #b22222;"># rather than the full size of the train or test data sets.</span>
+  <span style="color: #000000; background-color: #ffffff;">images_placeholder</span> = tf.placeholder(tf.float32, <span style="color: #000000; background-color: #ffffff;">shape</span>=(batch_size,
+                                                         mnist.IMAGE_PIXELS))
+  <span style="color: #000000; background-color: #ffffff;">labels_placeholder</span> = tf.placeholder(tf.int32, <span style="color: #000000; background-color: #ffffff;">shape</span>=(batch_size))
+  <span style="color: #a020f0;">return</span> images_placeholder, labels_placeholder
+
+<span style="color: #000000; background-color: #ffffff;">feed_dict</span> = fill_feed_dict(data_set,images_placeholder,labels_placeholder)
+
+In [<span style="color: #000000; background-color: #ffffff;">1</span>]: feed_dict
+Out[<span style="color: #000000; background-color: #ffffff;">1</span>]: 
+{&lt;tf.Tensor <span style="color: #8b2252;">'Placeholder:0'</span> <span style="color: #000000; background-color: #ffffff;">shape</span>=(<span style="color: #000000; background-color: #ffffff;">100</span>, <span style="color: #000000; background-color: #ffffff;">784</span>) <span style="color: #000000; background-color: #ffffff;">dtype</span>=float32&gt;: array([[ <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>., ...,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.],
+        [ <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>., ...,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.],
+        [ <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>., ...,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.],
+        ..., 
+        [ <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>., ...,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.],
+        [ <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>., ...,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.],
+        [ <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>., ...,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.,  <span style="color: #000000; background-color: #ffffff;">0</span>.]], <span style="color: #000000; background-color: #ffffff;">dtype</span>=float32),
+ &lt;tf.Tensor <span style="color: #8b2252;">'Placeholder_1:0'</span> <span style="color: #000000; background-color: #ffffff;">shape</span>=(<span style="color: #000000; background-color: #ffffff;">100</span>,) <span style="color: #000000; background-color: #ffffff;">dtype</span>=int32&gt;: array([<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">2</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">2</span>, <span style="color: #000000; background-color: #ffffff;">2</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">4</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">4</span>, <span style="color: #000000; background-color: #ffffff;">9</span>,
+        <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">2</span>, <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">2</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">4</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">3</span>,
+        <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">2</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">3</span>,
+        <span style="color: #000000; background-color: #ffffff;">4</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">8</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">6</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">7</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">5</span>,
+        <span style="color: #000000; background-color: #ffffff;">1</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">3</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">9</span>, <span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">dtype</span>=uint8)}
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">loss</span>(logits, labels):
+  <span style="color: #8b2252;">"""Calculates the loss from the logits and the labels.</span>
+
+<span style="color: #8b2252;">  Args:</span>
+<span style="color: #8b2252;">    logits: Logits tensor, float - [batch_size, NUM_CLASSES].</span>
+<span style="color: #8b2252;">    labels: Labels tensor, int32 - [batch_size].</span>
+
+<span style="color: #8b2252;">  Returns:</span>
+<span style="color: #8b2252;">    loss: Loss tensor of type float.</span>
+<span style="color: #8b2252;">  """</span>
+  <span style="color: #000000; background-color: #ffffff;">labels</span> = tf.to_int64(labels)
+  <span style="color: #b22222;"># sgu: cross_entropy.get_shape(): TensorShape([Dimension(100)]) where 100 is the batch_size </span>
+  <span style="color: #000000; background-color: #ffffff;">cross_entropy</span> = tf.nn.sparse_softmax_cross_entropy_with_logits(
+      <span style="color: #000000; background-color: #ffffff;">labels</span>=labels, <span style="color: #000000; background-color: #ffffff;">logits</span>=logits, <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">'xentropy'</span>) 
+  <span style="color: #a020f0;">return</span> tf.reduce_mean(cross_entropy, <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">'xentropy_mean'</span>)
+
+<span style="color: #b22222;">#</span><span style="color: #b22222;">sgu: due to the tf.reduce_mean, loss now is just a number(i.e., 0-D tensor)</span>
+<span style="color: #000000; background-color: #ffffff;">loss</span> = mnist.loss(logits, labels_placeholder) <span style="color: #b22222;">#loss.get_shape(): TensorShape([])</span>
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">Get the outputs before the ReLU.</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">hidden1_outputs.get_shape(): TensorShape([Dimension(100), Dimension(128)])</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">where 100 is the batch size and 128 is the dimension in the hidden1 layer,</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">i.e., 128 features are extracted in hidden1</span>
+<span style="color: #000000; background-color: #ffffff;">hidden1_outputs</span> = tf.get_default_graph().get_tensor_by_name(<span style="color: #8b2252;">'hidden1/add:0'</span>)
+</pre>
+</div>
+
+<p>
+In some case, the input tensor might be of rank 1 (<code>train_inputs</code>) and the output tensor (<code>train_labels</code>) would be rank 2.  This is not a problem as long as the operations can consume them. In the sample code below, <code>tf.nn.embedding_lookup</code> and  <code>tf.nn.nce_loss</code> require the arguments of those shapes.  
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #b22222;">#</span><span style="color: #b22222;">example/tutorials/word2vec/word2vec_basic.py. </span>
+    <span style="color: #b22222;">#sgu train_inputs.get_shape(): TensorShape([Dimension(32)]) where 32 is the batch_size </span>
+    <span style="color: #000000; background-color: #ffffff;">train_inputs</span> = tf.placeholder(tf.int32, <span style="color: #000000; background-color: #ffffff;">shape</span>=[batch_size])
+    <span style="color: #000000; background-color: #ffffff;">train_labels</span> = tf.placeholder(tf.int32, <span style="color: #000000; background-color: #ffffff;">shape</span>=[batch_size, <span style="color: #000000; background-color: #ffffff;">1</span>]) <span style="color: #b22222;">#nce_loss requires train_lables to be rank 2 </span>
+    <span style="color: #000000; background-color: #ffffff;">embeddings</span> = tf.Variable(
+               tf.random_uniform([vocabulary_size, embedding_size], -<span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>))
+
+    <span style="color: #b22222;">#sgu embed.get_shape(): TensorShape([Dimension(50000), Dimension(128)]) where 50000 is the vocab size and 128 is the embedding_size. </span>
+
+    <span style="color: #b22222;">#sgu:embed.get_shape(): TensorShape([Dimension(32), Dimension(128)]) </span>
+    <span style="color: #b22222;">#sgu: where 32 is the batch_size and 128 is the dimension size</span>
+    <span style="color: #000000; background-color: #ffffff;">embed</span> = tf.nn.embedding_lookup(embeddings, train_inputs) 
+
+    <span style="color: #b22222;"># Construct the variables for the NCE loss</span>
+    <span style="color: #000000; background-color: #ffffff;">nce_weights</span> = tf.Variable(
+        tf.truncated_normal([vocabulary_size, embedding_size],
+                            <span style="color: #000000; background-color: #ffffff;">stddev</span>=<span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span> / math.sqrt(embedding_size)))
+    <span style="color: #000000; background-color: #ffffff;">nce_biases</span> = tf.Variable(tf.zeros([vocabulary_size]))
+
+  <span style="color: #b22222;">#sgu: loss is a scalar, ie, a tensor of rank 0</span>
+  <span style="color: #b22222;">#loss.get_shape: TensorShape([])</span>
+  <span style="color: #000000; background-color: #ffffff;">loss</span> = tf.reduce_mean(
+      tf.nn.nce_loss(<span style="color: #000000; background-color: #ffffff;">weights</span>=nce_weights,
+                     <span style="color: #000000; background-color: #ffffff;">biases</span>=nce_biases,
+                     <span style="color: #000000; background-color: #ffffff;">labels</span>=train_labels,
+                     <span style="color: #000000; background-color: #ffffff;">inputs</span>=embed,
+                     <span style="color: #000000; background-color: #ffffff;">num_sampled</span>=num_sampled,
+                     <span style="color: #000000; background-color: #ffffff;">num_classes</span>=vocabulary_size))
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Add operation node to the graph</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+The way the Tensorflow API is designed, library routines that create new operation nodes always attach nodes to the default graph. In fact, <code>value+1</code> or <code>reduce(value2)</code> adds new nodes to the graph (as demonstrated below). Interactive debugging needs to be careful not to create unintended new nodes to the graph. 
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python">In [<span style="color: #000000; background-color: #ffffff;">1</span>]: <span style="color: #a020f0;">import</span> tensorflow <span style="color: #a020f0;">as</span> tf
+In [<span style="color: #000000; background-color: #ffffff;">2</span>]: <span style="color: #000000; background-color: #ffffff;">graph</span>=tf.get_default_graph()
+In [<span style="color: #000000; background-color: #ffffff;">3</span>]: graph.as_graph_def()
+Out[<span style="color: #000000; background-color: #ffffff;">3</span>]: 
+versions {
+  producer: <span style="color: #000000; background-color: #ffffff;">17</span>
+}
+In [<span style="color: #000000; background-color: #ffffff;">4</span>]: <span style="color: #000000; background-color: #ffffff;">value</span> = tf.constant(<span style="color: #000000; background-color: #ffffff;">1</span>)
+In [<span style="color: #000000; background-color: #ffffff;">5</span>]: graph.as_graph_def()
+Out[<span style="color: #000000; background-color: #ffffff;">5</span>]: 
+node {
+  name: <span style="color: #8b2252;">"Const"</span>
+  op: <span style="color: #8b2252;">"Const"</span>
+  attr {
+    key: <span style="color: #8b2252;">"dtype"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"value"</span>
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: <span style="color: #000000; background-color: #ffffff;">1</span>
+      }
+    }
+  }
+}
+versions {
+  producer: <span style="color: #000000; background-color: #ffffff;">17</span>
+}
+In [<span style="color: #000000; background-color: #ffffff;">6</span>]: <span style="color: #000000; background-color: #ffffff;">value2</span>=value+<span style="color: #000000; background-color: #ffffff;">1</span>
+In [<span style="color: #000000; background-color: #ffffff;">7</span>]: graph.as_graph_def()
+Out[<span style="color: #000000; background-color: #ffffff;">7</span>]: 
+node {
+  name: <span style="color: #8b2252;">"Const"</span>
+  op: <span style="color: #8b2252;">"Const"</span>
+  attr {
+    key: <span style="color: #8b2252;">"dtype"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"value"</span>
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: <span style="color: #000000; background-color: #ffffff;">1</span>
+      }
+    }
+  }
+}
+node {
+  name: <span style="color: #8b2252;">"add/y"</span>
+  op: <span style="color: #8b2252;">"Const"</span>
+  attr {
+    key: <span style="color: #8b2252;">"dtype"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"value"</span>
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: <span style="color: #000000; background-color: #ffffff;">1</span>
+      }
+    }
+  }
+}
+node {
+  name: <span style="color: #8b2252;">"add"</span>
+  op: <span style="color: #8b2252;">"Add"</span>
+  <span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"Const"</span>
+  <span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"add/y"</span>
+  attr {
+    key: <span style="color: #8b2252;">"T"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+}
+versions {
+  producer: <span style="color: #000000; background-color: #ffffff;">17</span>
+}
+In [<span style="color: #000000; background-color: #ffffff;">8</span>]: tf.reduce_mean(value)
+Out[<span style="color: #000000; background-color: #ffffff;">8</span>]: &lt;tf.Tensor <span style="color: #8b2252;">'Mean:0'</span> <span style="color: #000000; background-color: #ffffff;">shape</span>=() <span style="color: #000000; background-color: #ffffff;">dtype</span>=int32&gt;
+In [<span style="color: #000000; background-color: #ffffff;">9</span>]: graph.as_graph_def()
+Out[<span style="color: #000000; background-color: #ffffff;">9</span>]: 
+node {
+  name: <span style="color: #8b2252;">"Const"</span>
+  op: <span style="color: #8b2252;">"Const"</span>
+  attr {
+    key: <span style="color: #8b2252;">"dtype"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"value"</span>
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: <span style="color: #000000; background-color: #ffffff;">1</span>
+      }
+    }
+  }
+}
+node {
+  name: <span style="color: #8b2252;">"add/y"</span>
+  op: <span style="color: #8b2252;">"Const"</span>
+  attr {
+    key: <span style="color: #8b2252;">"dtype"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"value"</span>
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: <span style="color: #000000; background-color: #ffffff;">1</span>
+      }
+    }
+  }
+}
+node {
+  name: <span style="color: #8b2252;">"add"</span>
+  op: <span style="color: #8b2252;">"Add"</span>
+  <span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"Const"</span>
+  <span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"add/y"</span>
+  attr {
+    key: <span style="color: #8b2252;">"T"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+}
+node {
+  name: <span style="color: #8b2252;">"Const_1"</span>
+  op: <span style="color: #8b2252;">"Const"</span>
+  attr {
+    key: <span style="color: #8b2252;">"dtype"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"value"</span>
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: <span style="color: #8b2252;">"Mean"</span>
+  op: <span style="color: #8b2252;">"Mean"</span>
+  <span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"Const"</span>
+  <span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"Const_1"</span>
+  attr {
+    key: <span style="color: #8b2252;">"T"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"Tidx"</span>
+    value {
+      <span style="color: #483d8b;">type</span>: DT_INT32
+    }
+  }
+  attr {
+    key: <span style="color: #8b2252;">"keep_dims"</span>
+    value {
+      b: false
+    }
+  }
+}
+versions {
+  producer: <span style="color: #000000; background-color: #ffffff;">17</span>
+}
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Inspect the Graph</h2>
+<div class="outline-text-2" id="text-4">
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #b22222;"># </span><span style="color: #b22222;">Q: what happen when name_scope intervenes with variable_scope</span>
+<span style="color: #a020f0;">with</span> tf.name_scope(<span style="color: #8b2252;">"ns"</span>):
+    <span style="color: #a020f0;">with</span> tf.variable_scope(<span style="color: #8b2252;">"vs"</span>):
+        <span style="color: #000000; background-color: #ffffff;">v1</span> = tf.get_variable(<span style="color: #8b2252;">"v1"</span>,[<span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>]) 
+        <span style="color: #000000; background-color: #ffffff;">v2</span> = tf.Variable([<span style="color: #000000; background-color: #ffffff;">2</span>.],<span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">"v2"</span>)
+        <span style="color: #000000; background-color: #ffffff;">v3</span> = v1+v2
+v1.name  <span style="color: #b22222;">#vs/v1:0</span>
+v2.name  <span style="color: #b22222;">#ns/vs/v1:0</span>
+v3.name  <span style="color: #b22222;">#ns/vs/add:0 </span>
+
+<span style="color: #b22222;">#</span><span style="color: #b22222;">list all the node</span>
+<span style="color: #000000; background-color: #ffffff;">l</span> = [n <span style="color: #a020f0;">for</span> n <span style="color: #a020f0;">in</span> tf.get_default_graph().as_graph_def().node] 
+[(ll.name,ll.op) <span style="color: #a020f0;">for</span>  ll <span style="color: #a020f0;">in</span> l]
+
+In [<span style="color: #000000; background-color: #ffffff;">12</span>]: <span style="color: #000000; background-color: #ffffff;">g</span>  = tf.get_default_graph()
+In [<span style="color: #000000; background-color: #ffffff;">13</span>]: <span style="color: #000000; background-color: #ffffff;">op</span> = g.get_operation_by_name(<span style="color: #8b2252;">"ns/vs/add"</span>)
+In [<span style="color: #000000; background-color: #ffffff;">14</span>]: op.node_def
+Out[<span style="color: #000000; background-color: #ffffff;">14</span>]: 
+name: <span style="color: #8b2252;">"ns/vs/add"</span>
+op: <span style="color: #8b2252;">"Add"</span>
+<span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"vs/v1/read"</span>
+<span style="color: #483d8b;">input</span>: <span style="color: #8b2252;">"ns/vs/v2/read"</span>
+attr {
+  key: <span style="color: #8b2252;">"T"</span>
+  value {
+    <span style="color: #483d8b;">type</span>: DT_FLOAT
+  }
+}
+<span style="color: #b22222;">#</span><span style="color: #b22222;">get the output tensor of an op </span>
+<span style="color: #000000; background-color: #ffffff;">t</span> = g.get_tensor_by_name(<span style="color: #8b2252;">"ns/vs/add:0"</span>) 
+<span style="color: #a020f0;">assert</span> <span style="color: #000000; background-color: #ffffff;">t</span>==v3
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> Name Scope vs. Variable Scope:</h2>
+<div class="outline-text-2" id="text-5">
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #a020f0;">with</span> tf.name_scope(<span style="color: #8b2252;">"ns"</span>):
+    <span style="color: #a020f0;">with</span> tf.variable_scope(<span style="color: #8b2252;">"vs"</span>):
+        <span style="color: #000000; background-color: #ffffff;">v1</span> = tf.get_variable(<span style="color: #8b2252;">"v1"</span>,[<span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>]) 
+        <span style="color: #000000; background-color: #ffffff;">v2</span> = tf.Variable([<span style="color: #000000; background-color: #ffffff;">2</span>.],<span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">"v2"</span>)
+        <span style="color: #000000; background-color: #ffffff;">v3</span> = v1+v2
+v1.name  <span style="color: #b22222;">#vs/v1:0</span>
+v2.name  <span style="color: #b22222;">#ns/vs/v1:0</span>
+v3.name  <span style="color: #b22222;">#ns/vs/add:0</span>
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> Interactive Session vs. Session</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+<a href="http://stackoverflow.com/questions/40645952/tensorflow-is-it-always-more-convenient-to-use-interactivesession-compared-to?noredirect=1&lq=1">http://stackoverflow.com/questions/40645952/tensorflow-is-it-always-more-convenient-to-use-interactivesession-compared-to?noredirect=1&lq=1</a>
+</p>
+</div>
+</div>
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> Sample code to visualization embedding vector</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+This is an sample code to visualize MNIST hidden vector in Tensorboard
+<a href="https://github.com/tensorflow/tensorflow/issues/6322">https://github.com/tensorflow/tensorflow/issues/6322</a>
+This is an sample code to visualize word2vec in Tensorboard:
+<a href="https://github.com/shiyuangu/tensorflow/blob/master/tensorflow/examples/tutorials/word2vec/word2vec_basic.py">https://github.com/shiyuangu/tensorflow/blob/master/tensorflow/examples/tutorials/word2vec/word2vec_basic.py</a>
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: <span class="timestamp-wrapper"><span class="timestamp">&lt;2017-01-07 Sun&gt;</span></span></p>
+<p class="author">Author: sgu</p>
+<p class="date">Created: 2017-01-16 Mon 19:24</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
