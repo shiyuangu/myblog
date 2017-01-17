@@ -5,7 +5,48 @@
 #+DATE: <2014-08-10 Sun>
 #+CATEGORY: Programming
 -----------------------
-This post  is a summary of the syntactical differences between C++ and Java. 
+This post  is a summary of the syntactical differences between C++ and Java.
+* Packages
+Package is a concept only applied to JAVA. Class in C++ has no visibility, only members of class has. 
+** One file, one public type at most 
+If you put multiple types in a single source file, only one can be public, and it must have the same name as the source file.  You can include non-public types in the same file as a public type(this is strongly discouraged, unless the non-public types are small and closely related to the public type), but only the public type will be accessible from outside the package. All the top-level, non-public types will be package private. 
+** To use a public package member from outside its package
+do one of the following: 
++ Refer to the member by its fully qualified name 
+  graphics.Rectangle myRect = new graphics.Rectangle();
+
++ Import the package member 
+  import graphics.Rectangle;
+  Rectangle myRect = new Rectangle()
+
++ Import the member's entire package
+  import graphics.*;
+  import graphics.A*; //error 
+
+** Apparent Hierarchies of Packages
+At first, packages appear to be hierarchical, but they are not. For example, the JAVA API inclues a /java.awt/ package, a /java.awt.font/, and other /java.awt.xxxx/ packages. However, the prefix /java.awt/ is used for a number of related package to make  the relationship evident, but not to show inclusion, so you must import both packages with all their files: 
+
+import java.awt.*;
+import java.awt.color.*;
+
+** Name Ambiguity
+If a member in one package shares its name with a member in another package and both packages are imported, you must refer to each member by its qualified name. Note that this is more sensible way to deal with name collision than simply generating compiler errors. Consider the situation that two packages only has one member's name collision, we can still import the entire package. If we choose to do so, we only need to fully qualify one member name. 
+
+** The static import 
+import static java.lang.Math.*; 
+import all static member of the class java.lang.Math. 
+
+
+** Class path 
+Both the compiler and the JVM looks the com.example.graphics in 
+<class_path>/com/example/graphics.class 
+where <class_path> is specified by the CLASSPATH variable
+
+** import always 
+for convenience, java compiler automatically imports two entire package for each source file: 1). java.lang 2). the current package(the package for the current file)
+
+
+  
 * Exception: 
 + In Java, only subclass derived from Throwable can be thrown; in C++, any object can be thrown. 
 + Java has two type of exceptions: checked and unchecked; all exceptions in c++ are unchecked. C++ does have exception specification. But it's not part of function signature and it's not checked in complied time. At runtime, if the exception specification is not obeyed, std::unexpected is called (Cf. [[http://en.cppreference.com/w/cpp/language/except_spec][cppreference.com Exception Specification]]).
