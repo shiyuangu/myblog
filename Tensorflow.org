@@ -368,7 +368,7 @@ versions {
 #+END_SRC
 * Inspect the Graph
 #+BEGIN_SRC python
-# Q: what happen when name_scope intervenes with variable_scope
+# Q: what happen when name_scope is used together with variable_scope?
 with tf.name_scope("ns"):
     with tf.variable_scope("vs"):
         v1 = tf.get_variable("v1",[1.0]) 

@@ -1,8 +1,11 @@
+#+BLOG: wordpress
+#+POSTID: 131
 -----------------------
 #+TITLE: Tensorflow RNN PTB Example Walkthrough
 #+DATE: <2017-01-16 Mon> 
 #+CATEGORY: Machine Learning 
 -----------------------
+This is a walkthrough of the tensorflow example here
 * Structure
 There is only one graph, but there are three PTBModel instances to keep track of the elements related to the stage of train, valid and test. Note the use of =variable_scope= and the =resue= to share the weights/bias. 
 #+BEGIN_SRC python 
@@ -100,7 +103,7 @@ class PTBModel(object):
     state = self._initial_state
     with tf.variable_scope("RNN"):
       for time_step in range(num_steps):
-        #sgu: All LSTM shares the same weights across all time steps.
+        #sgu: All LSTMs share the same weights/bias varibles.There are num_steps LSTM cells(MultiRNNCell); each MultiRNN has two layers. 
         #sgu: for valid/test, the reuse = True has been set and hence the if below has no effect. 
         if time_step > 0: tf.get_variable_scope().reuse_variables()
         (cell_output, state) = cell(inputs[:, time_step, :], state)
