@@ -1,371 +1,241 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
-<head>
-<title>Tensorflow RNN PTB Example Walkthrough</title>
-<!-- 2017-01-16 Mon 19:23 -->
-<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<meta  name="generator" content="Org-mode" />
-<meta  name="author" content="sgu" />
-<style type="text/css">
- <!--/*--><![CDATA[/*><!--*/
-  .title  { text-align: center; }
-  .todo   { font-family: monospace; color: red; }
-  .done   { color: green; }
-  .tag    { background-color: #eee; font-family: monospace;
-            padding: 2px; font-size: 80%; font-weight: normal; }
-  .timestamp { color: #bebebe; }
-  .timestamp-kwd { color: #5f9ea0; }
-  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
-  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
-  .center { margin-left: auto; margin-right: auto; text-align: center; }
-  .underline { text-decoration: underline; }
-  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
-  p.verse { margin-left: 3%; }
-  pre {
-    border: 1px solid #ccc;
-    box-shadow: 3px 3px 3px #eee;
-    padding: 8pt;
-    font-family: monospace;
-    overflow: auto;
-    margin: 1.2em;
-  }
-  pre.src {
-    position: relative;
-    overflow: visible;
-    padding-top: 1.2em;
-  }
-  pre.src:before {
-    display: none;
-    position: absolute;
-    background-color: white;
-    top: -10px;
-    right: 10px;
-    padding: 3px;
-    border: 1px solid black;
-  }
-  pre.src:hover:before { display: inline;}
-  pre.src-sh:before    { content: 'sh'; }
-  pre.src-bash:before  { content: 'sh'; }
-  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
-  pre.src-R:before     { content: 'R'; }
-  pre.src-perl:before  { content: 'Perl'; }
-  pre.src-java:before  { content: 'Java'; }
-  pre.src-sql:before   { content: 'SQL'; }
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-  table { border-collapse:collapse; }
-  caption.t-above { caption-side: top; }
-  caption.t-bottom { caption-side: bottom; }
-  td, th { vertical-align:top;  }
-  th.right  { text-align: center;  }
-  th.left   { text-align: center;   }
-  th.center { text-align: center; }
-  td.right  { text-align: right;  }
-  td.left   { text-align: left;   }
-  td.center { text-align: center; }
-  dt { font-weight: bold; }
-  .footpara:nth-child(2) { display: inline; }
-  .footpara { display: block; }
-  .footdef  { margin-bottom: 1em; }
-  .figure { padding: 1em; }
-  .figure p { text-align: center; }
-  .inlinetask {
-    padding: 10px;
-    border: 2px solid gray;
-    margin: 10px;
-    background: #ffffcc;
-  }
-  #org-div-home-and-up
-   { text-align: right; font-size: 70%; white-space: nowrap; }
-  textarea { overflow-x: auto; }
-  .linenr { font-size: smaller }
-  .code-highlighted { background-color: #ffff00; }
-  .org-info-js_info-navigation { border-style: none; }
-  #org-info-js_console-label
-    { font-size: 10px; font-weight: bold; white-space: nowrap; }
-  .org-info-js_search-highlight
-    { background-color: #ffff00; color: #000000; font-weight: bold; }
-  /*]]>*/-->
-</style>
-<script type="text/javascript">
-/*
-@licstart  The following is the entire license notice for the
-JavaScript code in this tag.
+  ga('create', 'UA-45345113-1', 'lsu.edu');
+  ga('send', 'pageview');
 
-Copyright (C) 2012-2013 Free Software Foundation, Inc.
-
-The JavaScript code in this tag is free software: you can
-redistribute it and/or modify it under the terms of the GNU
-General Public License (GNU GPL) as published by the Free Software
-Foundation, either version 3 of the License, or (at your option)
-any later version.  The code is distributed WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
-
-As additional permission under GNU GPL version 3 section 7, you
-may distribute non-source (e.g., minimized or compacted) forms of
-that code without the copy of the GNU GPL normally required by
-section 4, provided you include this license notice and a URL
-through which recipients can access the Corresponding Source.
-
-
-@licend  The above is the entire license notice
-for the JavaScript code in this tag.
-*/
-<!--/*--><![CDATA[/*><!--*/
- function CodeHighlightOn(elem, id)
- {
-   var target = document.getElementById(id);
-   if(null != target) {
-     elem.cacheClassElem = elem.className;
-     elem.cacheClassTarget = target.className;
-     target.className = "code-highlighted";
-     elem.className   = "code-highlighted";
-   }
- }
- function CodeHighlightOff(elem, id)
- {
-   var target = document.getElementById(id);
-   if(elem.cacheClassElem)
-     elem.className = elem.cacheClassElem;
-   if(elem.cacheClassTarget)
-     target.className = elem.cacheClassTarget;
- }
-/*]]>*///-->
 </script>
+<!--<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <title>Shiyuan Gu</title>
+  <link rel="stylesheet" type="text/css" href="main.css" />
+</head>-->
+<head>
+  <title>Welcome to Shiyuan's Website</title>
+  <meta name="description" content="Shiyuan Gu" />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <!--<link rel="stylesheet" type="text/css" href="css/style.css" />-->
+  <link rel="stylesheet" type="text/css" href="css/main.css" />
+  <script type="text/javascript" src="js/jquery.min.js"></script>
+  <script type="text/javascript" src="js/image_slide.js"></script>
 </head>
+
 <body>
-<div id="content">
-<h1 class="title">Tensorflow RNN PTB Example Walkthrough</h1>
-<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. Structure</a></li>
-<li><a href="#sec-2">2. Building the Graph</a></li>
-<li><a href="#sec-3">3. Feeding the States of LSTM</a></li>
-</ul>
+<div id="main">  
+<hr/>
+	  <div id="menubar">
+        <ul id="menu">
+          <li class="current"><a href="#Bio">Bio</a></li>
+          <li><a href="#education">Education</a></li>
+          <li><a href="CV/Gu_Resume.pdf">Vita</a></li>
+	  <li><a href="#projects">Projects</a></li>
+	  <li><a href="#coursework">Coursework</a></li>
+	  <li><a href="https://bitbucket.org/shiyuangu">My Bitbucket</a></li>
+        </ul>
+      </div><!--close menubar-->	
+    
+<div id="site_content">	
+
+<div id="portfolio">
+     <div id="myimage">    
+           <img width="180px" src="Pics/shiyuangu2.jpg" id="shiyuan" alt="shiyuan"/>
+     </div><!--#image-->
+     <div id="col23">
+       <div id="col2">
+	 <table>
+                <tr><td align=left><h2>Shiyuan Gu </h2> </td> </tr>
+                <tr><td align=left><strong>Postdoctoral Appointee</strong></td></tr>
+                <tr><td align=left><strong>Argonne National Laboratory</strong></td></tr>
+            </table>
+
+            <table>
+
+                <tr> <td align=left><strong>Office: </strong> Room D133, Blg 200 </td>
+                <td> </td>
+                </tr>
+                <tr>
+                      <td><strong> Tel: </strong> (225)-395-9983</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><strong>Email:</strong>  shiyuangu "at" gmail.com</td>
+                    <td></td>
+                </tr>
+            </table>
+       </div>
+       <div id="col3">
+	 <img width="240px" src="Pics/anl_logo_head.png" id="shiyuan" alt="shiyuan"/>
+       </div>
+     </div><!--#col23 -->   
+</div><!--#portfolio-->	  
+
+
+<section id="education">
+<div class=content_heading>
+   <h3> Education</h3>
 </div>
+<div id="education_context">
+  <table>
+    <tr><td>Ph.D. in Mathematics, Louisiana State University, August 2012</td></tr>
+    <tr><td>Guest student, Institute of Mathematics and its Applications, September 2010 to June 2011</td></tr>
+    <tr><td>M.S. in Computer Science, Louisiana State University, January 2010</td> </tr>
+    <tr><td>M.S. in Mathematics, Louisiana State University, December 2007</td></tr>
+    <tr><td>B.S. in Computational Science, Nanjing Univerisity, China, June 2006</td> </tr>
+  </table>
 </div>
-<hr  />
-<hr  />
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> Structure</h2>
-<div class="outline-text-2" id="text-1">
-<p>
-There is only one graph, but there are three PTBModel instances to keep track of the elements related to the stage of train, valid and test. Note the use of <code>variable_scope</code> and the <code>resue</code> to share the weights/bias. 
-</p>
-<div class="org-src-container">
+</section><!--Education -->
 
-<pre class="src src-python"><span style="color: #a020f0;">with</span> tf.Graph().as_default():
-  <span style="color: #000000; background-color: #ffffff;">initializer</span> = tf.random_uniform_initializer(-config.init_scale,
-                                              config.init_scale)
-
-  <span style="color: #a020f0;">with</span> tf.name_scope(<span style="color: #8b2252;">"Train"</span>):
-    <span style="color: #000000; background-color: #ffffff;">train_input</span> = PTBInput(<span style="color: #000000; background-color: #ffffff;">config</span>=config, <span style="color: #000000; background-color: #ffffff;">data</span>=train_data, <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">"TrainInput"</span>)
-    <span style="color: #a020f0;">with</span> tf.variable_scope(<span style="color: #8b2252;">"Model"</span>, <span style="color: #000000; background-color: #ffffff;">reuse</span>=<span style="color: #a020f0;">None</span>, <span style="color: #000000; background-color: #ffffff;">initializer</span>=initializer):
-      <span style="color: #000000; background-color: #ffffff;">m</span> = PTBModel(<span style="color: #000000; background-color: #ffffff;">is_training</span>=<span style="color: #a020f0;">True</span>, <span style="color: #000000; background-color: #ffffff;">config</span>=config, <span style="color: #000000; background-color: #ffffff;">input_</span>=train_input)
-    tf.scalar_summary(<span style="color: #8b2252;">"Training Loss"</span>, m.cost)
-    tf.scalar_summary(<span style="color: #8b2252;">"Learning Rate"</span>, m.lr)
-
-  <span style="color: #a020f0;">with</span> tf.name_scope(<span style="color: #8b2252;">"Valid"</span>):
-    <span style="color: #000000; background-color: #ffffff;">valid_input</span> = PTBInput(<span style="color: #000000; background-color: #ffffff;">config</span>=config, <span style="color: #000000; background-color: #ffffff;">data</span>=valid_data, <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">"ValidInput"</span>)
-    <span style="color: #a020f0;">with</span> tf.variable_scope(<span style="color: #8b2252;">"Model"</span>, <span style="color: #000000; background-color: #ffffff;">reuse</span>=<span style="color: #a020f0;">True</span>, <span style="color: #000000; background-color: #ffffff;">initializer</span>=initializer):
-      <span style="color: #000000; background-color: #ffffff;">mvalid</span> = PTBModel(<span style="color: #000000; background-color: #ffffff;">is_training</span>=<span style="color: #a020f0;">False</span>, <span style="color: #000000; background-color: #ffffff;">config</span>=config, <span style="color: #000000; background-color: #ffffff;">input_</span>=valid_input)
-    tf.scalar_summary(<span style="color: #8b2252;">"Validation Loss"</span>, mvalid.cost)
-
-  <span style="color: #a020f0;">with</span> tf.name_scope(<span style="color: #8b2252;">"Test"</span>):
-    <span style="color: #000000; background-color: #ffffff;">test_input</span> = PTBInput(<span style="color: #000000; background-color: #ffffff;">config</span>=eval_config, <span style="color: #000000; background-color: #ffffff;">data</span>=test_data, <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">"TestInput"</span>)
-    <span style="color: #a020f0;">with</span> tf.variable_scope(<span style="color: #8b2252;">"Model"</span>, <span style="color: #000000; background-color: #ffffff;">reuse</span>=<span style="color: #a020f0;">True</span>, <span style="color: #000000; background-color: #ffffff;">initializer</span>=initializer):
-      <span style="color: #000000; background-color: #ffffff;">mtest</span> = PTBModel(<span style="color: #000000; background-color: #ffffff;">is_training</span>=<span style="color: #a020f0;">False</span>, <span style="color: #000000; background-color: #ffffff;">config</span>=eval_config,
-                      <span style="color: #000000; background-color: #ffffff;">input_</span>=test_input)
-</pre>
+<section id="projects">
+<div class=content_heading>
+	  <h3>Projects & Publications</h3>
 </div>
-<p>
-A typical epoch loop follows. Each epoch iteration completes a full pass of the train, valid and test dataset. Note that the learning rate are kept constant in each epoch and only updated across epoch. 
-</p>
-<div class="org-src-container">
+    <table>
+    <tr>
+        <td> <img alt="CahnHilliard" width="325px" src="Research/moose-eigensolver-screenshot.png"/> </td>
+       <td> &nbsp; </td>
+        <td>
+	   <span> Numerical Simulations for Piezoelectric Energy Harvester.</span>
+	    <br /><br />
+            <span class="papername"> Polymer piezoelectric energy harvesters for low wind speed</span> <br />
+            D.~Li, S.~Hong, S.~Gu, S.~Nakhmanson, O.~Heinonen, D.~Karpeev and K. No <br />
+            <span class="journalname">Applied  Physics Letters, 104, 2014</span> <br /><br />
+	    <span class="papername">Presentation:  Elastic Properties of Coupled Mesoscale Systems}, US National Congress on Computational Mechanics, Raleigh, North Carolina, July 2013</span><br />
+	    <a href="https://www.youtube.com/channel/UC7VQKxGapK36UC7XS3uWjNg">More Pictures & Movies</a>&nbsp &nbsp <a href="Research/usnccm12.pdf">slides</a><br><br><br><br>
+        </td>
+    </tr>
+     </table>
+     <hr>
+    <table>
+    <tr>
+        <td> <img alt="CahnHilliard" width="325px" src="Research/CahnHilliard.png"/> </td>
+       <td> &nbsp; </td>
+        <td>
+	   <span> C0 Interior Penalty Methods for Cahn-Hilliard Equations and applications to <br/>phase separation and image processing.</span>
+	    <br /><br />
+            <span class="papername"> A quadratic C0 interior penalty method for linear fourth order boundary value problems with boundary conditions of Cahn-Hilliard type</span> <br />
+            S.C. Brenner, S. Gu, T. Gudi, L.-Y. Sung <br />
+            <span class="journalname">SIAM. Journal of Numerical Analysis, 50(4), 2088–2110</span> <br /><br />
+	    <span class="papername"> Multigrid methods for the biharmonic problem with Cahn-Hilliard boundary conditions</span><br />
+	    S.C. Brenner, S.Gu, L.-Y. Sung <br />
+	    <span class="journalname">  Proceedings of the Twentieth International Conference on Domain Decomposition Methods in San Diego, California </span><br />
+	    <a href="https://www.youtube.com/channel/UC7VQKxGapK36UC7XS3uWjNg">More Pictures & Movies</a>&nbsp &nbsp  <a href="Research/c0ip.pdf ">slides</a><br><br><br><br>
+        </td>
+    </tr>
+     </table>
+     <hr>
+     <table>
+     <tr>
+        <td> <img alt="TVCG12" width="325px" src="Research/TVCG12.jpg"/> </td>
+       <td> &nbsp; </td>
+        <td>
+	    A volumetric mapping method using fourth order differential equations.<br /><br />
+            <span class="papername"> Biharmonic Volumetric Mapping using Fundamental Solutions</span> <br />
+            H. Xu, W. Yu, S. Gu, X. Li <br />
+            <span class="journalname"> IEEE Trans. on Visualization and Computer Graphics (TVCG), accepted.</span> <br />
+        </td>
+    </tr>
+       <tr><td colspan="3"> <hr/> </td></tr>
+       <tr>
+        <td> <img alt="MDV" width="325px" src="Research/MDV.png"/> </td>
+       <td> &nbsp; </td>
+        <td>
+	    A visualization algorithm for automatically detecting and highlighting difference between datasets<br /><br />
+            <span class="papername">  <a href="Research/wscg2010.pdf">Component-based isosurface extraction for multiple dataset visualization</a> </span> <br />
+            S. Gu and B. Karki <br />
+            <span class="journalname"> Journal of WSCG, the International Conference in Central Europe
+  on Computer Graphics, Visualization and Computer Vision, 18:97-104, 2010.  <a href="Research/mdv.pdf">(slides)</a></span> <br />
+        </td>
+    </tr>
+     </table>
+      <hr>
+      <table>
+       <tr>
+        <td> <img alt="ICAPR" width="325px" src="Research/ICAPR.png"/> </td>
+       <td> &nbsp; </td>
+        <td>
+	    A simple shape recognition algorithm<br /><br />
+            <span class="papername">  <a href="Research/ShapeRecognition.pdf"> Shape recognition using a new spatial representation and a D.P.
+  matching algorithm. </a></span> <br />
+            S. Gu and S. Kundu <br />
+            <span class="journalname">  Proceedings of Seventh International Conference on Advances
+  in Pattern Recognition, Kolkata, India, pages 422--425, 2009.</span> <br />
+        </td>
+    </tr> 
+    </table>
+     <hr>
+      <table>
+       <tr>
+        <td> <img alt="medtronic" width="325px" src="Research/medtronic.png"/> </td>
+       <td> &nbsp; </td>
+        <td>Ribbon formation for pacemaker (<a href="http://www.ima.umn.edu">IMA</a> & <a href="http://www.medtronic.com">Medtronic Inc.</a>)<br /><br />
+            <span class="papername"> Ribbon Formation for Electrical Interconnection &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</span> <br />
+            S. Gu (with J.Gary, etc.)<br />
+            <span class="journalname">  <a href="http://www.ima.umn.edu/2007-2008/MM8.6-15.08/activities/Gray-J.%20Michael/Team3-Report.pdf">Tech Report</a>,&nbsp IMA, &nbsp 2008</span> <br />
+        </td>
+    </tr> 
+    </table> 
+</section><!--Projects-->
 
-<pre class="src src-python"><span style="color: #000000; background-color: #ffffff;">sv</span> = tf.train.Supervisor(<span style="color: #000000; background-color: #ffffff;">logdir</span>=FLAGS.save_path)
-<span style="color: #a020f0;">with</span> sv.managed_session() <span style="color: #a020f0;">as</span> session:
-  <span style="color: #a020f0;">for</span> i <span style="color: #a020f0;">in</span> <span style="color: #483d8b;">range</span>(config.max_max_epoch):
-    <span style="color: #000000; background-color: #ffffff;">lr_decay</span> = config.lr_decay ** <span style="color: #483d8b;">max</span>(i + <span style="color: #000000; background-color: #ffffff;">1</span> - config.max_epoch, <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">0</span>)
-    m.assign_lr(session, config.learning_rate * lr_decay)
+<section id="coursework">
+    <div class=content_heading>
+	  <h3>Coursework</h3>
+    </div>
+    
+    <table>
+      <tr>
+	<td width=20 >
+	</td>
+      <td>
+      <h2>Mathematics</h2>
+       <ul>
+         <li>Differential Geometry</li>
+         <li>Nonparametric Statistics</li>
+         <li>Applied Stochastic Process </li>
+         <li>Numerical Linear Algebra</li>
+	  <li>Numerical Optimization</li>
+         <li>Finite Difference Methods</li>
+         <li>Finite Element Methods</li>
+         <li>Fast Solvers</li>
+         <li>Optimal Control and Shape Optimization</li>
+       </ul>
+       </td>
+	<td>
+         <h2>Computer Science</h2>
+	 <ul>
+	   <li>Machine Learning</li>
+	   <li>Scientific Visualization</li>
+	   <li>Geometric Modeling and Computer Graphics</li>
+	   <li>Operating System</li>
+	   <li>High Performance Computing</li>
+	   <li>Artificial Intelligence (University of Minnesota)</li>
+	   <li>Image Processing (University of Minnesota)</li>
+	   <li>Computer Vision (University of Minnesota)</li>
+	   <li>GPU Architecture & GPU Programming(audit)</li>
+	 </ul>
+	 </td>
+      </tr>
+    </table>
+</section><!-- -->
+  
+</div><!--close site_content-->
 
-    <span style="color: #a020f0;">print</span>(<span style="color: #8b2252;">"Epoch: %d Learning rate: %.3f"</span> % (i + <span style="color: #000000; background-color: #ffffff;">1</span>, session.run(m.lr)))
-    <span style="color: #000000; background-color: #ffffff;">train_perplexity</span> = run_epoch(session, m, <span style="color: #000000; background-color: #ffffff;">eval_op</span>=m.train_op,
-                                 <span style="color: #000000; background-color: #ffffff;">verbose</span>=<span style="color: #a020f0;">True</span>)
-    <span style="color: #a020f0;">print</span>(<span style="color: #8b2252;">"Epoch: %d Train Perplexity: %.3f"</span> % (i + <span style="color: #000000; background-color: #ffffff;">1</span>, train_perplexity))
-    <span style="color: #000000; background-color: #ffffff;">valid_perplexity</span> = run_epoch(session, mvalid)
-    <span style="color: #a020f0;">print</span>(<span style="color: #8b2252;">"Epoch: %d Valid Perplexity: %.3f"</span> % (i + <span style="color: #000000; background-color: #ffffff;">1</span>, valid_perplexity))
-
-  <span style="color: #000000; background-color: #ffffff;">test_perplexity</span> = run_epoch(session, mtest)
-  <span style="color: #a020f0;">print</span>(<span style="color: #8b2252;">"Test Perplexity: %.3f"</span> % test_perplexity)
-
-  <span style="color: #a020f0;">if</span> FLAGS.save_path:
-    <span style="color: #a020f0;">print</span>(<span style="color: #8b2252;">"Saving model to %s."</span> % FLAGS.save_path)
-    sv.saver.save(session, FLAGS.save_path, <span style="color: #000000; background-color: #ffffff;">global_step</span>=sv.global_step)
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> Building the Graph</h2>
-<div class="outline-text-2" id="text-2">
-<p>
-RNN is for sequence model. Each learning example is a pair of (<code>input_data</code>, <code>target</code>) where <code>input_data</code> and <code>target</code> are both sequence of the same length. Moreover, <code>input_data</code> and <code>target</code> are only differed by 1  in position.  For example, Given a sequence <code>(w_1,w_2,....)</code>, if <code>input</code> is <code>(w_1,w_2,..,w_n)</code>, the target is <code>(w_2,w_3, ..., w_n)</code>.  Also, note that how RNN is unrolled. I have commented the parts worth attention.  
-</p>
-<div class="org-src-container">
-
-<pre class="src src-python"><span style="color: #a020f0;">class</span> <span style="color: #228b22;">PTBModel</span>(object):
-  <span style="color: #8b2252;">"""The PTB model."""</span>
-
-  <span style="color: #a020f0;">def</span> <span style="color: #0000ff;">__init__</span>(<span style="color: #a020f0;">self</span>, is_training, config, input_):
-    <span style="color: #a020f0;">self</span>._input = input_
-
-    <span style="color: #000000; background-color: #ffffff;">batch_size</span> = input_.batch_size  <span style="color: #b22222;">#20</span>
-    <span style="color: #000000; background-color: #ffffff;">num_steps</span> = input_.num_steps <span style="color: #b22222;">#20, the length of the sequence in each learning example. </span>
-    <span style="color: #000000; background-color: #ffffff;">size</span> = config.hidden_size <span style="color: #b22222;">#200-1500 depends on the config</span>
-    <span style="color: #000000; background-color: #ffffff;">vocab_size</span> = config.vocab_size
-
-    <span style="color: #b22222;"># Slightly better results can be obtained with forget gate biases</span>
-    <span style="color: #b22222;"># initialized to 1 but the hyperparameters of the model would need to be</span>
-    <span style="color: #b22222;"># different than reported in the paper.</span>
-    <span style="color: #000000; background-color: #ffffff;">lstm_cell</span> = tf.nn.rnn_cell.BasicLSTMCell(size, <span style="color: #000000; background-color: #ffffff;">forget_bias</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">state_is_tuple</span>=<span style="color: #a020f0;">True</span>) <span style="color: #b22222;">#sgu: This line doesn't create the weights/bias insight the LSTM cell, not yet.</span>
-
-    <span style="color: #b22222;">#sgu: Dropout is applied for medium/large configuration</span>
-    <span style="color: #a020f0;">if</span> is_training <span style="color: #a020f0;">and</span> config.keep_prob &lt; <span style="color: #000000; background-color: #ffffff;">1</span>:
-      <span style="color: #000000; background-color: #ffffff;">lstm_cell</span> = tf.nn.rnn_cell.DropoutWrapper(
-          lstm_cell, <span style="color: #000000; background-color: #ffffff;">output_keep_prob</span>=config.keep_prob)
-    <span style="color: #000000; background-color: #ffffff;">cell</span> = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * config.num_layers, <span style="color: #000000; background-color: #ffffff;">state_is_tuple</span>=<span style="color: #a020f0;">True</span>)
-
-    <span style="color: #a020f0;">self</span>._initial_state = cell.zero_state(batch_size, data_type())
-
-    <span style="color: #a020f0;">with</span> tf.device(<span style="color: #8b2252;">"/cpu:0"</span>):
-      <span style="color: #b22222;">#sgu: embedding vector is shared across train, valid and test </span>
-      <span style="color: #000000; background-color: #ffffff;">embedding</span> = tf.get_variable(
-          <span style="color: #8b2252;">"embedding"</span>, [vocab_size, size], <span style="color: #000000; background-color: #ffffff;">dtype</span>=data_type())
-      <span style="color: #000000; background-color: #ffffff;">inputs</span> = tf.nn.embedding_lookup(embedding, input_.input_data)
-
-    <span style="color: #a020f0;">if</span> is_training <span style="color: #a020f0;">and</span> config.keep_prob &lt; <span style="color: #000000; background-color: #ffffff;">1</span>:
-      <span style="color: #000000; background-color: #ffffff;">inputs</span> = tf.nn.dropout(inputs, config.keep_prob)
-
-    <span style="color: #b22222;"># Simplified version of tensorflow.models.rnn.rnn.py's rnn().</span>
-    <span style="color: #b22222;"># This builds an unrolled LSTM for tutorial purposes only.</span>
-    <span style="color: #b22222;"># In general, use the rnn() or state_saving_rnn() from rnn.py.</span>
-    <span style="color: #b22222;">#</span>
-    <span style="color: #b22222;"># The alternative version of the code below is:</span>
-    <span style="color: #b22222;">#</span>
-    <span style="color: #b22222;"># inputs = tf.unstack(inputs, num=num_steps, axis=1)</span>
-    <span style="color: #b22222;"># outputs, state = tf.nn.rnn(cell, inputs, initial_state=self._initial_state)</span>
-    <span style="color: #000000; background-color: #ffffff;">outputs</span> = []
-    <span style="color: #000000; background-color: #ffffff;">state</span> = <span style="color: #a020f0;">self</span>._initial_state
-    <span style="color: #a020f0;">with</span> tf.variable_scope(<span style="color: #8b2252;">"RNN"</span>):
-      <span style="color: #a020f0;">for</span> time_step <span style="color: #a020f0;">in</span> <span style="color: #483d8b;">range</span>(num_steps):
-        <span style="color: #b22222;">#sgu: All LSTM shares the same weights across all time steps.</span>
-        <span style="color: #b22222;">#sgu: for valid/test, the reuse = True has been set and hence the if below has no effect. </span>
-        <span style="color: #a020f0;">if</span> time_step &gt; <span style="color: #000000; background-color: #ffffff;">0</span>: tf.get_variable_scope().reuse_variables()
-        (cell_output, state) = cell(inputs[:, time_step, :], state)
-        outputs.append(cell_output)
-
-    <span style="color: #b22222;">#sgu: cell_output: (batch_size, embedding_size) </span>
-    <span style="color: #b22222;">#sgu: output shape: (num_steps*batch_size, embedding_size)</span>
-    <span style="color: #000000; background-color: #ffffff;">output</span> = tf.reshape(tf.concat(<span style="color: #000000; background-color: #ffffff;">1</span>, outputs), [-<span style="color: #000000; background-color: #ffffff;">1</span>, size])
-    <span style="color: #000000; background-color: #ffffff;">softmax_w</span> = tf.get_variable(
-        <span style="color: #8b2252;">"softmax_w"</span>, [size, vocab_size], <span style="color: #000000; background-color: #ffffff;">dtype</span>=data_type())
-    <span style="color: #000000; background-color: #ffffff;">softmax_b</span> = tf.get_variable(<span style="color: #8b2252;">"softmax_b"</span>, [vocab_size], <span style="color: #000000; background-color: #ffffff;">dtype</span>=data_type())
-    <span style="color: #b22222;">#sgu: logit shape: (num_step*batch_size, vocab_size)</span>
-    <span style="color: #000000; background-color: #ffffff;">logits</span> = tf.matmul(output, softmax_w) + softmax_b
-    <span style="color: #000000; background-color: #ffffff;">loss</span> = tf.nn.seq2seq.sequence_loss_by_example(
-        [logits],
-        [tf.reshape(input_.targets, [-<span style="color: #000000; background-color: #ffffff;">1</span>])],
-        [tf.ones([batch_size * num_steps], <span style="color: #000000; background-color: #ffffff;">dtype</span>=data_type())])
-    <span style="color: #a020f0;">self</span>._cost = <span style="color: #000000; background-color: #ffffff;">cost</span> = tf.reduce_sum(loss) / batch_size
-    <span style="color: #b22222;">#sgu: keep final state which is used as initial_state for next iteration(see run_epoch())</span>
-    <span style="color: #a020f0;">self</span>._final_state = state  
-
-    <span style="color: #a020f0;">if</span> <span style="color: #a020f0;">not</span> is_training:
-      <span style="color: #a020f0;">return</span>
-
-    <span style="color: #a020f0;">self</span>._lr = tf.Variable(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">trainable</span>=<span style="color: #a020f0;">False</span>)
-    <span style="color: #000000; background-color: #ffffff;">tvars</span> = tf.trainable_variables() 
-    <span style="color: #000000; background-color: #ffffff;">grads</span>, <span style="color: #483d8b;">_</span> = tf.clip_by_global_norm(tf.gradients(cost, tvars),
-                                      config.max_grad_norm)
-
-    <span style="color: #b22222;">#sgu: When the learning rate self._lr changes, the optimizer picks up automatically  </span>
-    <span style="color: #000000; background-color: #ffffff;">optimizer</span> = tf.train.GradientDescentOptimizer(<span style="color: #a020f0;">self</span>._lr)
-    <span style="color: #a020f0;">self</span>._train_op = optimizer.apply_gradients(
-        <span style="color: #483d8b;">zip</span>(grads, tvars),
-        <span style="color: #000000; background-color: #ffffff;">global_step</span>=tf.contrib.framework.get_or_create_global_step())
-    <span style="color: #a020f0;">self</span>._new_lr = tf.placeholder(
-        tf.float32, <span style="color: #000000; background-color: #ffffff;">shape</span>=[], <span style="color: #000000; background-color: #ffffff;">name</span>=<span style="color: #8b2252;">"new_learning_rate"</span>)
-    <span style="color: #a020f0;">self</span>._lr_update = tf.assign(<span style="color: #a020f0;">self</span>._lr, <span style="color: #a020f0;">self</span>._new_lr)  
-
-  <span style="color: #a020f0;">def</span> <span style="color: #0000ff;">assign_lr</span>(<span style="color: #a020f0;">self</span>, session, lr_value):
-    session.run(<span style="color: #a020f0;">self</span>._lr_update, <span style="color: #000000; background-color: #ffffff;">feed_dict</span>={<span style="color: #a020f0;">self</span>._new_lr: lr_value})
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> Feeding the States of LSTM</h2>
-<div class="outline-text-2" id="text-3">
-<p>
-The <code>run_epoch</code> run multiple iterations to pass the one full dataset. In each iteration, the stats of LSTM needs to be fed. Note that the last state of the current iterations are used as initial state of next iterations. Also, the learning rate are kept constant during one epoch.  
-</p>
-<div class="org-src-container">
-
-<pre class="src src-python"><span style="color: #a020f0;">def</span> <span style="color: #0000ff;">run_epoch</span>(session, model, <span style="color: #000000; background-color: #ffffff;">eval_op</span>=<span style="color: #a020f0;">None</span>, <span style="color: #000000; background-color: #ffffff;">verbose</span>=<span style="color: #a020f0;">False</span>):
-  <span style="color: #8b2252;">"""Runs the model on the given data."""</span>
-  <span style="color: #000000; background-color: #ffffff;">start_time</span> = time.time()
-  <span style="color: #000000; background-color: #ffffff;">costs</span> = <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">0</span>
-  <span style="color: #000000; background-color: #ffffff;">iters</span> = <span style="color: #000000; background-color: #ffffff;">0</span>
-  <span style="color: #000000; background-color: #ffffff;">state</span> = session.run(model.initial_state)
-
-  <span style="color: #000000; background-color: #ffffff;">fetches</span> = {
-      <span style="color: #8b2252;">"cost"</span>: model.cost,
-      <span style="color: #8b2252;">"final_state"</span>: model.final_state,
-  }
-  <span style="color: #a020f0;">if</span> eval_op <span style="color: #a020f0;">is</span> <span style="color: #a020f0;">not</span> <span style="color: #a020f0;">None</span>:
-    <span style="color: #000000; background-color: #ffffff;">fetches</span>[<span style="color: #8b2252;">"eval_op"</span>] = eval_op
-
-  <span style="color: #a020f0;">for</span> step <span style="color: #a020f0;">in</span> <span style="color: #483d8b;">range</span>(model.input.epoch_size):
-    <span style="color: #000000; background-color: #ffffff;">feed_dict</span> = {}
-    <span style="color: #b22222;">#sgu: use the final state of the current mini-batch as the initial state of the subsequent minibatch</span>
-    <span style="color: #b22222;">#sgu: multiple LSTM cells can stack together. state[i] is the state of i-th cell.  </span>
-    <span style="color: #a020f0;">for</span> i, (c, h) <span style="color: #a020f0;">in</span> <span style="color: #483d8b;">enumerate</span>(model.initial_state):
-      <span style="color: #000000; background-color: #ffffff;">feed_dict</span>[c] = state[i].c
-      <span style="color: #000000; background-color: #ffffff;">feed_dict</span>[h] = state[i].h
-
-    <span style="color: #000000; background-color: #ffffff;">vals</span> = session.run(fetches, feed_dict)
-    <span style="color: #000000; background-color: #ffffff;">cost</span> = vals[<span style="color: #8b2252;">"cost"</span>]
-    <span style="color: #000000; background-color: #ffffff;">state</span> = vals[<span style="color: #8b2252;">"final_state"</span>] 
-
-    <span style="color: #000000; background-color: #ffffff;">costs</span> += cost
-    <span style="color: #000000; background-color: #ffffff;">iters</span> += model.input.num_steps
-    <span style="color: #a020f0;">if</span> verbose <span style="color: #a020f0;">and</span> step % (model.input.epoch_size // <span style="color: #000000; background-color: #ffffff;">10</span>) == <span style="color: #000000; background-color: #ffffff;">10</span>:
-      <span style="color: #b22222;">#sgu: the 1st : % of progress in current epoch;</span>
-      <span style="color: #b22222;">#     the 2nd : perplexity</span>
-      <span style="color: #b22222;">#     the 3rd:  words per sec  so far in the training </span>
-      <span style="color: #a020f0;">print</span>(<span style="color: #8b2252;">"%.3f perplexity: %.3f speed: %.0f wps"</span> %
-            (step * <span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span> / model.input.epoch_size, np.exp(costs / iters),
-             iters * model.input.batch_size / (time.time() - start_time)))
-
-  <span style="color: #a020f0;">return</span> np.exp(costs / iters)
-</pre>
-</div>
-</div>
-</div>
-</div>
-<div id="postamble" class="status">
-<p class="date">Date: <span class="timestamp-wrapper"><span class="timestamp">&lt;2017-01-16 Mon&gt;</span></span></p>
-<p class="author">Author: sgu</p>
-<p class="date">Created: 2017-01-16 Mon 19:23</p>
-<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
-<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
-</div>
+<div id="menubar">
+        <ul id="menu">
+          <li class="current"><a href="#Bio">Bio</a></li>
+          <li><a href="#education">Education</a></li>
+          <li><a href="CV/Gu_Resume.pdf">Vita</a></li>
+	  <li><a href="#projects">Projects</a></li>
+	  <li><a href="#coursework">Coursework</a></li>
+	  <li><a href="https://bitbucket.org/shiyuangu">My Bitbucket</a></li>
+        </ul>
+ </div><!--close menubar-->
+	  
+</div><!--close main-->
 </body>
 </html>
