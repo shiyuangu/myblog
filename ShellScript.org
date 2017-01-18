@@ -247,6 +247,16 @@ ls -ltr|cat -n|sort -k10.4,10.4 -k10.2,10.3
 ####### Ancestor
 ======= end
 
+** /git/
+*** checkout file from stash item  
+This can be useful when syncing two branches tracking different versions of the same file, for exampling, syncing [[http://www.pazams.com/Github-syncing-the-gh-pages-branch/][gh-pages branch with master]].    
+#+BEGIN_SRC shell
+git add documentation
+git stash
+git checkout gh-pages 
+git checkout stash@{0} -- documentation/
+git stash pop #clear the last stash item 
+#+END_SRC
 * Package Management
 ** list all installed package 
 apt list --installed (for ubuntu 14.04)

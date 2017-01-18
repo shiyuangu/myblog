@@ -5,7 +5,8 @@
 #+DATE: <2017-01-16 Mon> 
 #+CATEGORY: Machine Learning 
 -----------------------
-This is a walkthrough of the tensorflow example here
+This is a walkthrough of the tensorflow sample code [[https://github.com/shiyuangu/tensorflow/blob/sgu/tensorflow/models/rnn/ptb/ptb_word_lm.py][here]] which implements the methods in [[http://arxiv.org/abs/1409.2329][(Zaremba, et. al.) Recurrent Neural Network Regularization]]
+
 * Structure
 There is only one graph, but there are three PTBModel instances to keep track of the elements related to the stage of train, valid and test. Note the use of =variable_scope= and the =resue= to share the weights/bias. 
 #+BEGIN_SRC python 
@@ -149,7 +150,7 @@ class PTBModel(object):
 #+END_SRC
 
 * Feeding the States of LSTM 
-The =run_epoch= run multiple iterations to pass the one full dataset. In each iteration, the stats of LSTM needs to be fed. Note that the last state of the current iterations are used as initial state of next iterations. Also, the learning rate are kept constant during one epoch.  
+The =run_epoch= run multiple iterations to pass the one full dataset. In each iteration, the state of LSTM need to be fed. Note that the last state of the current iteration are used as initial state of next iteration which is sensible act since the current minibatch is indeed followed by the subsequent minibatch (Cf. /reader.py/: =ptb_producer=).   Also, the learning rate are kept constant during one epoch.  
 #+BEGIN_SRC python
 def run_epoch(session, model, eval_op=None, verbose=False):
   """Runs the model on the given data."""

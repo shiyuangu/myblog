@@ -58,6 +58,119 @@ https://stackoverflow.com/questions/40866675/implementation-difference-between-t
 For efficiency, readability(of the graph). 
 http://stackoverflow.com/questions/39512276/tensorflow-simple-operations-tensors-vs-python-variables
 
+* Evaluating graph element 
+** Evaluating an operation vs. evaluating a variable 
+When we run an operation  =sess.run(op)=, every other operation which /op/ depends on is also  re-evaluated. Recall there is no notion of tensor -- Tensor is just an output of an operation hence evaluating a tensor is the same as  evaluating an operation. In contrast, evaluating a var is simply fetching its value. If we want to change the variable, we need to use tf.assign which is an operation. The following code, demonstrate the difference of evaluating an op vs. evaluating a variable.   
+#+BEGIN_SRC python 
+import tensorflow as tf
+flags = tf.flags
+logging = tf.logging
+flags.DEFINE_string("save_path", None,
+                    "Model output directory.")
+FLAGS = flags.FLAGS
+
+def main(_):
+    with tf.Graph().as_default():
+        epoch_size = tf.constant(10)
+        i = tf.train.range_input_producer(epoch_size, shuffle=False).dequeue(name="i") #i changes each time it is evaluated, 
+        #v = i + 1
+        v = tf.Variable(0,trainable = False)
+        op = tf.assign(v,i)
+        v3 = v + 1
+        sv = tf.train.Supervisor(logdir=FLAGS.save_path)
+        #sgu: sv.managed_seesion() instead of tf.Session() is needed for tf.train.range_input_producer to work; tf.Session() hangs. 
+        with sv.managed_session() as session:
+            t = tf.get_default_graph().get_tensor_by_name("i:0")
+            session.run(op) #op depends on i, i is re-evaluated when op is run and hence v is changed every time op run. v=0 after this run 
+            session.run(op) #v=1 after this run 
+            for _ in range(10):
+                #v is a variable, it doesn't change unless the assign op runs.  
+                v_val = session.run(v) 
+                print "v_val=", v_val
+                #v3 depends only on v, v3 doesn't change since v doesn't change.
+                v3_val = session.run(v3) 
+                print "v3_val=",v3_val
+                            
+if __name__ == "__main__":
+    tf.app.run()
+#+END_SRC
+** evaluating sequentially vs. evaluating simultaneously
+session.run([a,b]) accepts a list of graph elements and will evaluate the a,b in one run. This is different than session.run(a) followed by a session.run(b) 
+#+BEGIN_SRC python 
+import tensorflow as tf
+flags = tf.flags
+logging = tf.logging
+flags.DEFINE_string("save_path", None,
+                    "Model output directory.")
+FLAGS = flags.FLAGS
+def main(_):
+    with tf.Graph().as_default():
+        #i changes each time it is evaluated, 
+        i = tf.train.range_input_producer(10, shuffle=False).dequeue(name="i") 
+        v = i + 1
+        v3 = i + 1
+        sv = tf.train.Supervisor(logdir=FLAGS.save_path)
+        #sgu: sv.managed_seesion() instead of tf.Session() is needed for tf.train.range_input_producer to work; tf.Session() hangs. 
+        with sv.managed_session() as session:
+            for _ in range(10):             
+                v_val, v3_val = session.run([v,v3]) #line A
+                print "v=%d,v3=%d" % (v_val,v3_val) 
+                                           
+if __name__ == "__main__":
+    tf.app.run()
+
+Running the code above gives: 
+v=1,v3=1
+v=2,v3=2
+v=3,v3=3
+v=4,v3=4
+v=5,v3=5
+v=6,v3=6
+v=7,v3=7
+v=8,v3=8
+v=9,v3=9
+v=10,v3=10
+#+END_SRC
+In contrast, if we evaluate /v/,/v3/ sequentially(i.e.,  replace line A), we have different answer. 
+#+BEGIN_SRC python
+import tensorflow as tf
+flags = tf.flags
+logging = tf.logging
+flags.DEFINE_string("save_path", None,
+                    "Model output directory.")
+FLAGS = flags.FLAGS
+
+def main(_):
+    with tf.Graph().as_default():
+        epoch_size = tf.constant(10)
+        i = tf.train.range_input_producer(10, shuffle=False).dequeue(name="i") #i changes each time it is evaluated, 
+        v = i + 1
+        v3 = i + 1
+        sv = tf.train.Supervisor(logdir=FLAGS.save_path)
+        #sgu: sv.managed_seesion() instead of tf.Session() is needed for tf.train.range_input_producer to work; tf.Session() hangs. 
+        with sv.managed_session() as session:
+            for _ in range(10):
+                v_val = session.run(v) 
+                v3_val = session.run(v3) 
+                print "v=%d,v3=%d" % (v_val,v3_val) 
+
+if __name__ == "__main__":
+    tf.app.run()
+
+run the code above gives: 
+v=1,v3=2
+v=3,v3=4
+v=5,v3=6
+v=7,v3=8
+v=9,v3=10
+v=1,v3=2
+v=3,v3=4
+v=5,v3=6
+v=7,v3=8
+v=9,v3=10
+
+#+END_SRC
+
 * The shape of tensors 
  The first dimension of the input tensor and output tensor is the batch size. 
 Cf.  https://stackoverflow.com/questions/39090222/tensorflow-single-value-vs-batch-tensors
