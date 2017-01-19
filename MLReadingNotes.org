@@ -29,3 +29,5 @@ This allows /efficient/ fault tolerant.  The lost partitions can be recovered us
 ** Application not suitable for RDD
 RDD is only efficient for batch analytic -- The same operation is applied to a large batch of data items. How about a lot of opereation each applied to one data items? 
 
+** PageRank Example
+Use same partition scheme when joining RDDs for efficiency. 
