@@ -17,3 +17,15 @@ All 'natural' data is a Manifold. This paper:
 ** sgu
 This articles ties classification to knot untangling. Untangling is done in a higher dimensional spaces (as shown by the examples) and hence this perspective cannot explain why NN usually uses hidden layers of smaller dimensions. Other research suggests hidden layers corresponds to features. So maybe a more complete view of NN is first learning features (in lower-dimensional space) and then lift it to higher-dimensional space for linear separation. 
 
+* RDD-A Fault Tolerant Abstraction for In-Memory Cluster Computing
+** What's the value-add? 
+MapReduce lacks abstract of leveraging distributed memory.
+** RDD is /immutable/, /partitioned/ collection of records. 
+This allows /efficient/ fault tolerant.  The lost partitions can be recovered using lineage in /parallel/. 
+** Keep track transformation(lineage graph)  
+** Lazy evaluation, do not materialized at all time.
+** Argument to RDD operation is /closure/ which is represents by Scala as Java object. 
+"Move operation to data instead of moving data"   
+** Application not suitable for RDD
+RDD is only efficient for batch analytic -- The same operation is applied to a large batch of data items. How about a lot of opereation each applied to one data items? 
+
