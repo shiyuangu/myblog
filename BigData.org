@@ -1,5 +1,18 @@
 * Spark
-
+** RDD: 
++ Action vs. Transformation 
++ Persistence, Storage level 
+** Programming Framework 
+http://spark.apache.org/docs/latest/programming-guide.html
+** terminology 
+Slice  = Partition 
+** Text File: 
++ By default, Spark creates one partition for each block of the file (blocks being 128MB by default in HDFS), but you can also ask for a higher number of partitions by passing a larger value. Note that you cannot have fewer partitions than blocks.
++ Q: How to know the record to have keys or not? 
+TODO: read more about InputFormat in general 
+** DataFrame: 
++ pretty-print: df.show()
+ 
 * Spark SQL
 ** Create DataFrame
 pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0).  
@@ -61,3 +74,17 @@ In [96]: rv = sc.parallelize([v1,v2])
 In [97]: rv
 Out[97]: ParallelCollectionRDD[149] at parallelize at PythonRDD.scala:475
 #+END_SRC
+** Feature Engineering 
+*** Tokenizer 
+*** TF: 
++ Hashing TF:
+Why number of buckets is advisable to be 2^k?
+To read: https://en.wikipedia.org/wiki/Feature_hashing
++ ConutVectorizer:
+*** IDF: 
+Q: What is an /estimator/? 
+** text segmentation
+Stanford NLP Group, scalanlp/chalk 
+*** Word2Vec
+Estimator also. 
+http://spark.apache.org/docs/latest/mllib-feature-extraction.html#word2vec
