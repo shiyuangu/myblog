@@ -63,16 +63,19 @@ root
 #+BEGIN_SRC python 
 In [94]: v1
 Out[94]: DenseVector([0.0, 1.1, 0.1])
-
 In [95]: v2 = 
 KeyboardInterrupt
-
 In [95]: v2 = Vectors.dense([0.0, 1.1, -.1])
-
 In [96]: rv = sc.parallelize([v1,v2])
-
 In [97]: rv
 Out[97]: ParallelCollectionRDD[149] at parallelize at PythonRDD.scala:475
+#+END_SRC
+*** Sparse Vector and Sparse matrix 
+#+BEGIN_SRC python 
+from pyspark.mllib.linalg import Vectors
+import scipy.sparse as sps 
+sv1 = Vectors.sparse(3,[0,2],[1.0,3.0]) # the first integer is the size
+sv2 = sps.csc_matrix(..)
 #+END_SRC
 ** Feature Engineering 
 *** Tokenizer 
@@ -81,6 +84,23 @@ Out[97]: ParallelCollectionRDD[149] at parallelize at PythonRDD.scala:475
 Why number of buckets is advisable to be 2^k?
 To read: https://en.wikipedia.org/wiki/Feature_hashing
 + ConutVectorizer:
+#+BEGIN_SRC python
+In [56]: df = spark.createDataFrame([(0, ["a", "b", "c"]), (1, ["a", "b", "b", "c", "a"])],["label", "raw"])
+In [57]: cv = CountVectorizer(inputCol="raw", outputCol="vectors")
+
+In [58]: model = cv.fit(df)
+
+In [59]: model.vocabulary
+Out[59]: [u'b', u'a', u'c']
+
+In [60]: model.transform(df).show(truncate=False) #the output is in sparse vector format
++-----+---------------+-------------------------+
+|label|raw            |vectors                  |
++-----+---------------+-------------------------+
+|0    |[a, b, c]      |(3,[0,1,2],[1.0,1.0,1.0])|
+|1    |[a, b, b, c, a]|(3,[0,1,2],[2.0,2.0,1.0])| 
++-----+---------------+-------------------------+
+#+END_SRC
 *** IDF: 
 Q: What is an /estimator/? 
 ** text segmentation
