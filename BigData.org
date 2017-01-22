@@ -4,6 +4,7 @@
 + Persistence, Storage level 
 ** Programming Framework 
 http://spark.apache.org/docs/latest/programming-guide.html
+*** Session vs. Context 
 ** terminology 
 Slice  = Partition 
 ** Text File: 
@@ -11,12 +12,15 @@ Slice  = Partition
 + Q: How to know the record to have keys or not? 
 TODO: read more about InputFormat in general 
 ** DataFrame: 
-+ pretty-print: df.show()
  
 * Spark SQL
+** RDD vs. Dataset vs. DataFrame
+http://spark.apache.org/docs/latest/sql-programming-guide.html#datasets-and-dataframes
+**  Dataframe vs. Pandas dataframe
+http://www.kdnuggets.com/2016/01/python-data-science-pandas-spark-dataframe-differences.html
+Spark dataframe is /immutatble/ and is designed for lazy evaluation, distributed computation. 
 ** Create DataFrame
 pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0).  
-
 #+BEGIN_SRC python 
 from pyspark.sql import SparkSession
 from pyspark.sql import Row
@@ -26,13 +30,14 @@ parts = lines.map(lambda l: l.split(","))
 people = parts.map(lambda p: Row(name = p[0], age= int(p[1])))
 schemaPeople = spark.createDataFrame(people)
 type(schemaPeople)  #Dataframe
-schemaPeople.show()
+schemaPeople.show(truncate=False)
 schemaPeople.createOrReplaceTempView("people") #so that we can query the table through the SQL as follows. 
 teenagers= spark.sql("SELECT name FROME people where age >=13 and age <=19")
 teenagers= spark.sql("SELECT name FROM people where age >=13 and age <=19")
 type(teenagers) #Dataframe
 teenNames = teenagers.rdd.map(lambda: "Name: " + p.name)  #teenNames is a RDD
 #+END_SRC
+
 ** Schema 
 *** print 
 #+BEGIN_SRC python 
@@ -56,6 +61,59 @@ root
  |-- words: array (nullable = true)
  |    |-- element: string (containsNull = true)
  |-- features: vector (nullable = true)
+
+#+END_SRC
+** metadata: 
+http://stackoverflow.com/questions/32628845/is-there-a-way-to-add-extra-metadata-for-spark-dataframes
+columns in dataframe can have metadata 
+#+BEGIN_SRC python
+In [18]: df = spark.createDataFrame(
+    ...:     [(0, "a"), (1, "b"), (2, "c"), (3, "a"), (4, "a"), (5, "c
+    ...: ")],
+    ...:     ["id", "category"])
+    ...: 
+
+In [19]: indexer = StringIndexer(inputCol="category", outputCol="categ
+    ...: oryIndex")
+
+In [20]: model = indexer.fit(df)
+    ...: indexed = model.transform(df)
+    ...: 
+
+In [21]: indexed.show()
+    ...: 
++---+--------+-------------+
+| id|category|categoryIndex|
++---+--------+-------------+
+|  0|       a|          0.0|
+|  1|       b|          2.0|
+|  2|       c|          1.0|
+|  3|       a|          0.0|
+|  4|       a|          0.0|
+|  5|       c|          1.0|
++---+--------+-------------+
+
+In [23]: indexed.schema.fields
+Out[23]: 
+[StructField(id,LongType,true),
+ StructField(category,StringType,true),
+ StructField(categoryIndex,DoubleType,true)]
+
+In [26]: indexed.printSchema()
+root
+ |-- id: long (nullable = true)
+ |-- category: string (nullable = true)
+ |-- categoryIndex: double (nullable = true)
+
+
+In [24]: [t.metadata for t in indexed.schema.fields]
+Out[24]: 
+[{},
+ {},
+ {u'ml_attr': {u'name': u'categoryIndex',
+   u'type': u'nominal',
+   u'vals': [u'a', u'c', u'b']}}]
+
 
 #+END_SRC
 ** Chain operation 
@@ -82,6 +140,35 @@ regexTokenized.select("sentence", "words") \
 
 #+END_SRC
 * Spark MLlib
+** Pipeline
++ inspired by /sklearn/, and relied on Dataframe.  
++ Transformers, Estimators
+Transformer.transform()s and Estimator.fit()s are both stateless. /Model/ is a transformer.  
++ Pipeline can be nonlinear (DAG) 
++ Same instance cannot be inserted into the pipeline twice(but can be two instance of the same type)
++ 
+*** Param and ParamMap
++ MLlib /Estimators/ and /Transformer/s use a uniform API for specifying parameters.
++ Parameters belong to specific instances of Estimators and Transformers. For example, if we have two LogisticRegression instances lr1 and lr2, then we can build a ParamMap with both maxIter parameters specified: ParamMap(lr1.maxIter -> 10, lr2.maxIter -> 20).
+#+BEGIN_SRC 
+# to see the parameters for an estimator 
+In [33]: lr = LogisticRegression(maxIter=10, regParam=0.01)
+In [34]: print("LogisticRegression parameters:\n" + lr.explainParams()
+    ...:  + "\n")
+In [39]: lr.maxIter
+Out[39]: Param(parent=u'LogisticRegression_4f8190d0025ad21226c0', name='maxIter', doc='max number of iterations (>= 0).')
+
+n [41]: paramMap = {lr.maxIter: 20}
+In [42]: paramMap.update({lr.regParam: 0.1, lr.threshold: 0.55}) 
+In [43]: paramMap2 = {lr.probabilityCol: "myProbability"}
+In [44]: paramMapCombined = paramMap.copy()
+In [45]: paramMapCombined.update(paramMap2)
+In [46]: model2 = lr.fit(training, paramMapCombined)
+
+# extractParamMap() is not working in PySpark https://issues.apache.org/jira/browse/SPARK-13368
+print(model2.extractParamMap()) 
+#+END_SRC
+
 ** Vector and Array 
 #+BEGIN_SRC python 
 In [94]: v1
@@ -126,8 +213,68 @@ In [60]: model.transform(df).show(truncate=False) #the output is in sparse vecto
 #+END_SRC
 *** IDF: 
 Q: What is an /estimator/? 
+*** Word2Vec
+The tutorial is misleading regarding to this example. sample_lda_data.txt is the training data for this example, instead of text8 data(even though this is the standard training set for word2vec). http://spark.apache.org/docs/latest/api/python/_modules/pyspark/mllib/feature.html#Word2Vec
+#+BEGIN_SRC python
+from pyspark.mllib.feature import Word2Vec
+
+#sgu: 
+inp = sc.textFile("data/mllib/sample_lda_data.txt").map(lambda row: row.split(" "))
+
+word2vec = Word2Vec()
+model = word2vec.fit(inp)
+
+synonyms = model.findSynonyms('1', 5)
+
+for word, cosine_distance in synonyms:
+    print("{}: {}".format(word, cosine_distance))
+#+END_SRC
+*** StringIndexer
+#+BEGIN_SRC python 
+In [13]: df = spark.createDataFrame(
+    ...:     [(0, "a"), (1, "b"), (2, "c"), (3, "a"), (4, "a"), (5, "c
+    ...: ")],
+    ...:     ["id", "category"])
+    ...: 
+
+In [14]: indexer = StringIndexer(inputCol="category", outputCol="categ
+    ...: oryIndex")
+
+In [15]: indexed = indexer.fit(df).transform(df)
+
+In [16]: indexed.show()
+    ...: 
++---+--------+-------------+
+| id|category|categoryIndex|
++---+--------+-------------+
+|  0|       a|          0.0|
+|  1|       b|          2.0|
+|  2|       c|          1.0|
+|  3|       a|          0.0|
+|  4|       a|          0.0|
+|  5|       c|          1.0|
++---+--------+-------------+
+
+
+In [17]: indexed.printSchema()
+root
+ |-- id: long (nullable = true)
+ |-- category: string (nullable = true)
+ |-- categoryIndex: double (nullable = true)
+
+#+END_SRC
+#+BEGIN_SRC python 
+#+END_SRC
 ** text segmentation
 Stanford NLP Group, scalanlp/chalk 
 *** Word2Vec
 Estimator also. 
 http://spark.apache.org/docs/latest/mllib-feature-extraction.html#word2vec
+** Classification
+*** What's the rawPrediction as in LogisticRegression ctor?
+For LogisticRegression, it's the logit (the linear function value, equiv. to  /prediction(glm_fit,new_data type="link") in R/ 
+http://stackoverflow.com/questions/37903288/what-do-colum-rawprediction-and-probability-of-dataframe-mean-in-spark-mllib
+*** What's aggregationDepth param in LogisticRegression ctor? 
+This relates to an improvement of MLlib regarding to MapReduce Paradigm. Multi-level aggregation tree is used to combined partially on a small set of executors before they sent to the drivers which is dramatically reduces the load of the driver. https://databricks.com/blog/2014/09/22/spark-1-1-mllib-performance-improvements.html
+Note this WIP: https://issues.apache.org/jira/browse/SPARK-17090
+
