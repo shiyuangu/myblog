@@ -2,6 +2,7 @@
 ** RDD: 
 + Action vs. Transformation 
 + Persistence, Storage level 
+each time we call a new action, the entire RDD must be computed "from scratch". To avoid this inefficiency, users can /persist/ immediate results. 
 ** Programming Framework 
 http://spark.apache.org/docs/latest/programming-guide.html
 *** Session vs. Context 
@@ -11,16 +12,48 @@ Slice  = Partition
 + By default, Spark creates one partition for each block of the file (blocks being 128MB by default in HDFS), but you can also ask for a higher number of partitions by passing a larger value. Note that you cannot have fewer partitions than blocks.
 + Q: How to know the record to have keys or not? 
 TODO: read more about InputFormat in general 
-** DataFrame: 
- 
+#+END_SRC 
 * Spark SQL
 ** RDD vs. Dataset vs. DataFrame
 http://spark.apache.org/docs/latest/sql-programming-guide.html#datasets-and-dataframes
+DataFrame are RDD of Row 
+#+BEGIN_SRC  python 
+In [2]: df = spark.createDataFrame([
+   ...:     (0, "a b c".split(" ")),
+   ...:     (1, "a b b c a".split(" "))
+   ...: ], ["id", "words"])
+In [16]: df.rdd.collect()
+Out[16]: 
+[Row(id=0, words=[u'a', u'b', u'c']),
+ Row(id=1, words=[u'a', u'b', u'b', u'c', u'a'])]
+#+END_SRC
+
 **  Dataframe vs. Pandas dataframe
 http://www.kdnuggets.com/2016/01/python-data-science-pandas-spark-dataframe-differences.html
 Spark dataframe is /immutatble/ and is designed for lazy evaluation, distributed computation. 
+
 ** Create DataFrame
-pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0).  
+pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0). 
+*** create DataFrame from RDD
+#+BEGIN_SRC python 
+    data_path = "r52-no-stop.txt" 
+    spark = SparkSession\
+        .builder\
+        .appName("TfIdfExample")\
+        .getOrCreate()
+
+    #each line is a document; each document is represented by
+    # a "word" for the class label followed by a TAB and then a seq of words
+    # delimited by spaces
+    sc = spark.sparkContext 
+    documents = sc.textFile(data_path)\
+                  .map(lambda l: l.split("\t"))\
+                  .map(lambda p: Row(label=p[0],sentence=p[1]))
+
+    documents = spark.createDataFrame(documents)
+#+END_SRC
+
+*** useful functions 
 #+BEGIN_SRC python 
 from pyspark.sql import SparkSession
 from pyspark.sql import Row
@@ -36,7 +69,6 @@ teenagers= spark.sql("SELECT name FROME people where age >=13 and age <=19")
 teenagers= spark.sql("SELECT name FROM people where age >=13 and age <=19")
 type(teenagers) #Dataframe
 teenNames = teenagers.rdd.map(lambda: "Name: " + p.name)  #teenNames is a RDD
-#+END_SRC
 
 ** Schema 
 *** print 
@@ -139,14 +171,73 @@ regexTokenized.select("sentence", "words") \
     .withColumn("tokens", countTokens(col("words"))).show(truncate=False)
 
 #+END_SRC
+** common functions: 
+#+BEGIN_SRC python 
+# number of rows, 
+df.count() #return number of row regardless NA or not(vs. Pandas) 
+
+# number of columns
+len(df.columns)
+
+# show unique values of a column 
+df.select('col_name').distinct().show()
+
+#split a dataset 
+df_train, df_test = df.randomSplit([0.8,0.2])
+
+#+END_SRC
 * Spark MLlib
 ** Pipeline
+*** Summary
 + inspired by /sklearn/, and relied on Dataframe.  
-+ Transformers, Estimators
++ Transformers, Estimators, Evaluator
 Transformer.transform()s and Estimator.fit()s are both stateless. /Model/ is a transformer.  
 + Pipeline can be nonlinear (DAG) 
 + Same instance cannot be inserted into the pipeline twice(but can be two instance of the same type)
-+ 
++ PipelineModel consists of multiple transformers and estimators(Cf. Pipeline.scala) 
+#+BEGIN_SRC python
+from pyspark.ml import Pipeline
+from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.feature import HashingTF, Tokenizer
+
+# Prepare training documents from a list of (id, text, label) tuples.
+training = spark.createDataFrame([
+    (0, "a b c d e spark", 1.0),
+    (1, "b d", 0.0),
+    (2, "spark f g h", 1.0),
+    (3, "hadoop mapreduce", 0.0)
+], ["id", "text", "label"])
+
+# Configure an ML pipeline, which consists of three stages: tokenizer, hashingTF, and lr.
+tokenizer = Tokenizer(inputCol="text", outputCol="words")
+hashingTF = HashingTF(inputCol=tokenizer.getOutputCol(), outputCol="features")
+lr = LogisticRegression(maxIter=10, regParam=0.001)
+pipeline = Pipeline(stages=[tokenizer, hashingTF, lr])
+
+# Fit the pipeline to training documents.
+model = pipeline.fit(training)
+
+# Prepare test documents, which are unlabeled (id, text) tuples.
+test = spark.createDataFrame([
+    (4, "spark i j k"),
+    (5, "l m n"),
+    (6, "spark hadoop spark"),
+    (7, "apache hadoop")
+], ["id", "text"])
+
+# Make predictions on test documents and print columns of interest.
+prediction = model.transform(test)
+selected = prediction.select("id", "text", "probability", "prediction")
+for row in selected.collect():
+    rid, text, prob, prediction = row
+    print("(%d, %s) --> prob=%s, prediction=%f" % (rid, text, str(prob), prediction))
+#+END_SRC
+*** vs. Pipeline in sklearn 
+sklearn Pipeline consists of both transformers and estimators. Transformers in sklearn implement both /fit/ and /transfrom/ method while estimators in sklearn implements /fit/ and /predict/ methods. Also, transformers/estimators in sklearn might has states while /transformers/ and /estimators/ in Spark are *stateless*. /estimators/ in sklearn rely on its internal state for prediction while /estimators/ in spark returns a /model/(which is a transformer)
+Cf. [[https://github.com/scikit-learn/scikit-learn/blob/14031f6/sklearn/pipeline.py#L86][Pipeline:_validate_steps]]
+Cf. [[http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.FunctionTransformer.html][FunctionTransformer]]
+Cf. [[http://scikit-learn.org/stable/developers/contributing.html#rolling-your-own-estimator][rolling your own estimator]]
+
 *** Param and ParamMap
 + MLlib /Estimators/ and /Transformer/s use a uniform API for specifying parameters.
 + Parameters belong to specific instances of Estimators and Transformers. For example, if we have two LogisticRegression instances lr1 and lr2, then we can build a ParamMap with both maxIter parameters specified: ParamMap(lr1.maxIter -> 10, lr2.maxIter -> 20).
@@ -168,6 +259,12 @@ In [46]: model2 = lr.fit(training, paramMapCombined)
 # extractParamMap() is not working in PySpark https://issues.apache.org/jira/browse/SPARK-13368
 print(model2.extractParamMap()) 
 #+END_SRC
+
+*** Cross Validation 
+After identifying the best ParamMap, CrossValidator finally re-fits the Estimator using the best ParamMap and the entire dataset.
+Q: how to extract the best parameters from cvModel
+A: look at: /cvModel.getEstimatorParamMaps()/ and /cvModel.avgMetrics/ 
+ 
 
 ** Vector and Array 
 #+BEGIN_SRC python 
@@ -194,25 +291,61 @@ sv2 = sps.csc_matrix(..)
 Why number of buckets is advisable to be 2^k?
 To read: https://en.wikipedia.org/wiki/Feature_hashing
 + ConutVectorizer:
+/CountVectorizer/ is an /estimator/. During the fitting process, CountVectorizer will select the top /vocabSize/ words ordered by term frequency across the corpus. CountVectorizer.fit() generates a /CountVectorizerModel/. /CountVectorizerModel::transform(df_test)/ counts the term frequency in /df_test/ according to the /vocabulary/; the words not in the /vocabulary/ are ignored.  
 #+BEGIN_SRC python
-In [56]: df = spark.createDataFrame([(0, ["a", "b", "c"]), (1, ["a", "b", "b", "c", "a"])],["label", "raw"])
-In [57]: cv = CountVectorizer(inputCol="raw", outputCol="vectors")
+In [2]: df = spark.createDataFrame([
+   ...:     (0, "a b c".split(" ")),
+   ...:     (1, "a b b c a".split(" "))
+   ...: ], ["id", "words"])
 
-In [58]: model = cv.fit(df)
+In [3]: cv = CountVectorizer(inputCol="words", outputCol="features", vocabSize=3, minDF=2.0)
 
-In [59]: model.vocabulary
-Out[59]: [u'b', u'a', u'c']
+In [4]: model = cv.fit(df)
 
-In [60]: model.transform(df).show(truncate=False) #the output is in sparse vector format
-+-----+---------------+-------------------------+
-|label|raw            |vectors                  |
-+-----+---------------+-------------------------+
-|0    |[a, b, c]      |(3,[0,1,2],[1.0,1.0,1.0])|
-|1    |[a, b, b, c, a]|(3,[0,1,2],[2.0,2.0,1.0])| 
-+-----+---------------+-------------------------+
+In [5]: model.vocabulary
+Out[5]: [u'b', u'a', u'c']
+
+In [9]: df_test = spark.createDataFrame([(0, "c c c d a".split(" "))],["id","words"])
+
+In [10]: df_test.show()
++---+---------------+
+| id|          words|
++---+---------------+
+|  0|[c, c, c, d, a]|
++---+---------------+
+
+
+In [11]: model.transform(df)
+Out[11]: DataFrame[id: bigint, words: array<string>, features: vector]
+
+In [12]: model.transform(df).show(truncate=True)
++---+---------------+--------------------+
+| id|          words|            features|
++---+---------------+--------------------+
+|  0|      [a, b, c]|(3,[0,1,2],[1.0,1...|
+|  1|[a, b, b, c, a]|(3,[0,1,2],[2.0,2...|
++---+---------------+--------------------+
+
+
+In [13]: model.transform(df).show(truncate=False)
++---+---------------+-------------------------+
+|id |words          |features                 |
++---+---------------+-------------------------+
+|0  |[a, b, c]      |(3,[0,1,2],[1.0,1.0,1.0])|
+|1  |[a, b, b, c, a]|(3,[0,1,2],[2.0,2.0,1.0])|
++---+---------------+-------------------------+
+
+
+In [14]: model.transform(df_test).show(truncate=False)
++---+---------------+-------------------+
+|id |words          |features           |
++---+---------------+-------------------+
+|0  |[c, c, c, d, a]|(3,[1,2],[1.0,3.0])|
++---+---------------+-------------------+
+
 #+END_SRC
 *** IDF: 
-Q: What is an /estimator/? 
+Note that IDF doesn't normal the vector(vs. TfidfVectorizer in sklearn)
 *** Word2Vec
 The tutorial is misleading regarding to this example. sample_lda_data.txt is the training data for this example, instead of text8 data(even though this is the standard training set for word2vec). http://spark.apache.org/docs/latest/api/python/_modules/pyspark/mllib/feature.html#Word2Vec
 #+BEGIN_SRC python
@@ -229,7 +362,8 @@ synonyms = model.findSynonyms('1', 5)
 for word, cosine_distance in synonyms:
     print("{}: {}".format(word, cosine_distance))
 #+END_SRC
-*** StringIndexer
+*** StringIndexer, Index2String  
++ StringIndexer can be used to turn string into numeric index. As Spark 2.1.0, classifiers cannot handle string label so StringIndexer is needed  
 #+BEGIN_SRC python 
 In [13]: df = spark.createDataFrame(
     ...:     [(0, "a"), (1, "b"), (2, "c"), (3, "a"), (4, "a"), (5, "c
@@ -263,8 +397,16 @@ root
  |-- categoryIndex: double (nullable = true)
 
 #+END_SRC
+
++ Q: how to map the index back to string? 
+We can use the meta data in the column created by StringIndexer to convert numeric column back to string. 
 #+BEGIN_SRC python 
+    #Map back the predict index to label name if needed 
+    df, df_pred = documents, df_train 
+    name_mapping = dict([(col,t.metadata) for col, t in zip(df.columns,df.schema.fields)])['label_n']['ml_attr']['vals']
+    df_pred = IndexToString(inputCol='label_pred_n',outputCol='label_pred',labels = name_mapping).transform(df_pred)
 #+END_SRC
+
 ** text segmentation
 Stanford NLP Group, scalanlp/chalk 
 *** Word2Vec
@@ -275,6 +417,6 @@ http://spark.apache.org/docs/latest/mllib-feature-extraction.html#word2vec
 For LogisticRegression, it's the logit (the linear function value, equiv. to  /prediction(glm_fit,new_data type="link") in R/ 
 http://stackoverflow.com/questions/37903288/what-do-colum-rawprediction-and-probability-of-dataframe-mean-in-spark-mllib
 *** What's aggregationDepth param in LogisticRegression ctor? 
-This relates to an improvement of MLlib regarding to MapReduce Paradigm. Multi-level aggregation tree is used to combined partially on a small set of executors before they sent to the drivers which is dramatically reduces the load of the driver. https://databricks.com/blog/2014/09/22/spark-1-1-mllib-performance-improvements.html
+This is related to an improvement of MLlib regarding to MapReduce Paradigm. Multi-level aggregation tree is used to combined partially on a small set of executors before they sent to the drivers which is dramatically reduces the load of the driver. https://databricks.com/blog/2014/09/22/spark-1-1-mllib-performance-improvements.html
 Note this WIP: https://issues.apache.org/jira/browse/SPARK-17090
 
