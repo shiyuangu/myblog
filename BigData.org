@@ -149,7 +149,7 @@ Out[24]:
 
 #+END_SRC
 ** Chain operation 
-Note the use of the df.select(..).with(..)
+Note the use of the df.select(..).withColumn(..) and col(""). About the use of col("exp") function: not needed if exp is just a column name, but needed if more complicated expression (Cf. https://spark.apache.org/docs/2.0.0/api/java/org/apache/spark/sql/Column.html) 
 #+BEGIN_SRC python 
 from pyspark.ml.feature import Tokenizer, RegexTokenizer
 from pyspark.sql.functions import col, udf
@@ -171,6 +171,7 @@ regexTokenized.select("sentence", "words") \
     .withColumn("tokens", countTokens(col("words"))).show(truncate=False)
 
 #+END_SRC
+
 ** common functions: 
 #+BEGIN_SRC python 
 # number of rows, 
@@ -184,6 +185,12 @@ df.select('col_name').distinct().show()
 
 #split a dataset 
 df_train, df_test = df.randomSplit([0.8,0.2])
+
+#Stratified sampling: 
+>>> from pyspark.sql.functions import col 
+>>> dataset = sqlContext.range(0, 100).select((col("id") % 3).alias("key")) 
+>>> sampled = dataset.sampleBy("key", fractions={0: 0.1, 1: 0.2}, seed=0) 
+>>> sampled.groupBy("key").count().orderBy("key").show() 
 
 #+END_SRC
 * Spark MLlib
@@ -262,9 +269,15 @@ print(model2.extractParamMap())
 
 *** Cross Validation 
 After identifying the best ParamMap, CrossValidator finally re-fits the Estimator using the best ParamMap and the entire dataset.
+Q: how to extract the best model?
+A: /cvModel.bestModel/; if /cvModel/ is a Pipeline model, each stage can be retrieved by /cvModel.bestMode.stages[i]/ 
 Q: how to extract the best parameters from cvModel
 A: look at: /cvModel.getEstimatorParamMaps()/ and /cvModel.avgMetrics/ 
- 
+#+BEGIN_SRC python 
+#print the metrics for each combination of parameters in cv search 
+paramNames_pp=[";".join(["%s:%g" % (k.name,v) for k,v in p.items()]) for p in cvModel.getEstimatorParamMaps()]
+print(zip(paramNames_pp, cvModel.avgMetrics))
+#+END_SRC
 
 ** Vector and Array 
 #+BEGIN_SRC python 
