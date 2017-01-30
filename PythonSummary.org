@@ -126,6 +126,44 @@ f._num  #44, now _num exists after a call to f.num
 * Scoping Rules and Closure
  sgu:  There are two types of variables in a function: formal parameter and the other parameters, for example , in f(x) = a*x, x is the formal parameter. If a is bounded in the enclosing scope (not global scope, usually inside another function)  when the function f(x) is defined, f will has a closure and the value is remembered.. Closure is a function object which remembers the values regardless whether the enclosing scope is still present in memory. If  a is not bound in its immediate enclosing scope, the enclosing scope one level up, two level up before reaching the global scope  (regardless whether there is an 'a' in global scope), the name a will become a *free parameter* (https://docs.python.org/2/reference/executionmodel.html) and search in gloabl namespace. Note that in this case, f has no closure. Note that if there is no such name 'a' in global space at the time of *evaluation*, an error will be raised. If 'a' first exists but later is deleted, an error will also be raised. . Whether the parameter is found or not is determined by investigating f.__closure__[0].cell_contents, f.__closure__[1].cell_contents, ect. 
 #+BEGIN_SRC python 
+#this form a closure: 
+def fp(): 
+    a = 10 
+    return lambda x: a*x 
+g = fp() #g has a closure 
+g.__closure__[0] 
+ <cell at 0x7f84d0708868: int object at 0x1fa0080>
+
+#nesting is ok for closure too: 
+In [16]: def fp(): 
+    ...:     a = 10 
+    ...:     def fp2():
+    ...:         f = lambda x: a*x 
+    ...:         return f 
+    ...:     return fp2()
+    ...:     
+    ...: 
+
+In [17]: g = fp()  
+In [18]: g.__closure__ #g has a closure 
+Out[18]: (<cell at 0x7f84d0708280: int object at 0x1fa0080>,)
+
+#however, class scope is not considered when forming a closure 
+#this seems to be related to how local() work: free variable is returned when called in a function block but not in a class block: http://mathamy.com/python-closures-and-free-variables.html
+In [37]: class Base: 
+    ...:     b = 10 
+    ...:     def __init__(self): 
+    ...:         pass
+    ...:     def g(self): 
+    ...:         return lambda x: b*x
+
+g = Base().g() 
+g(2) #error, global name 'b' is not defined. 
+
+
+
+#+END_SRC
+#+BEGIN_SRC python 
 b = 2
 c = 1
 class A:
@@ -306,6 +344,10 @@ m=re.search('(\d+?)',"abc_2004-Q1.csv")
 m.group(1) #2
 #+END_SRC 
 
+* Performance Tricks 
+** dict
++ Use /dict.intervalues()/ instead of /dict.values()/ if we only need to extract the first values
+ 
 * Exceptions: 
 #+BEGIN_SRC python 
 try:
