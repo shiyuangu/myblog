@@ -1,0 +1,12 @@
+* RDD 
+* Spark 
+** RDD->Dataset/Dataframe(as 2.0)
+** RDD is low-level API; all user code should be written using dataset API
+** SparkSession (as 2.0) 
+SparkContext -> SparkSession 
+http://spark.apache.org/docs/latest/api/python/pyspark.sql.html#pyspark.sql.SparkSession
+The entry point to programming Spark with the Dataset and DataFrame API.
+A SparkSession can be used create DataFrame, register DataFrame as tables, execute SQL over tables, cache tables, and read parquet files. To create a SparkSession, use the following builder pattern. 
+
+
+ 

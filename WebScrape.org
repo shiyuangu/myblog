@@ -1,0 +1,80 @@
+* HTML
+** HTML Likes 
+
+** Form: Element, Attribute  
+http://www.w3schools.com/html/html_forms.asp
+eg:
+<a href="http://www.w3schools.com">This is a link</a> 
+
+=<a> </a>= is the link element. /href/ is the attribute to specify the link address. =This is a link= is the content 
+
+* Selenium 
+** fill in login form 
+#+BEGIN_SRC python 
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+br = webdriver.Firefox()
+br.get("https://www.okcupid.com")
+
+#click the hyper_link to open the login_form
+"""
+<header id="signup_header">
+   <div class="header_logo"> <a href="/">OkCupid</a> </div>
+   <div class="header_login">
+	 <span> Have an account? </span>
+	 <a id="open_sign_in_button" class="flatbutton clear dark-bg" href="https://www.okcupid.com/login">Sign in</a>
+   </div>
+   <a href="/home" class="continue">Continue to the site</a>
+</header>
+"""
+
+elem = br.find_element_by_id("open_sign_in_button")
+elem.click()
+
+
+#after the click, the loginform show up, and we can fill in usrname/passwd and submit the form 
+"""
+<div id="login_box" class="modal fixed aligncenter cornerclose default_type no_close">     
+   <div class="content ">   
+     <div class="actions_container clearfix"> 
+     <div id="facebook_connect" class="loginbox_action"> 
+     <h2 class="title">Connect your existing OkCupid account</h2> 
+     <form id="facebook_connect_form" class="okform" action="https://www.okcupid.com/login" method="post"> 
+        <input id="fbc_access_token" name="facebook_access_token" value="" type="hidden"> 
+        <input id="fbc_username" name="username" placeholder="Your email or username"> 
+        <input id="fbc_password" name="password" placeholder="Password" type="password"> 
+        <button id="fbc_submit" type="submit" class="flatbutton">Connect</button> 
+     </form> 
+   <p class="forgot_password"> <a href="javascript:void(0)">Forgot your password?</a> </p> 
+</div> 
+
+<div id="login_actions" class="loginbox_action active"> 
+   <h2 class="title">Sign in</h2> 
+   <form id="loginbox_form" class="okform" method="post" action="https://www.okcupid.com/login" method="post"> 
+      <input id="login_username" name="username" placeholder="Your email or username" /> 
+      <input id="login_password" type="password" name="password" placeholder="Password" /> 
+      <button type="submit" id="sign_in_button" class="flatbutton">Let’s go</button> 
+   </form> 
+   <p class="forgot_password"> 
+      <a href="javascript:void(0)">Forgot your password?</a> 
+   </p> 
+   <p class="strikey">or</p> 
+   <button id="log_in_facebook" class="facebook_button flatbutton">Sign in</button> 
+</div>
+"""
+
+"""
+<form id="loginbox_form" class="okform" method="post" action="https://www.okcupid.com/login" method="post">
+<input id="login_username" name="username" placeholder="Your email or username" /> 
+<input id="login_password" type="password" name="password" placeholder="Password" />
+<button type="submit" id="sign_in_button" class="flatbutton">Let’s go</button> </form>
+"""
+login_form = br.find_element_by_id("loginbox_form")
+br.find_element_by_id("login_username").send_keys("gshy2014@gmail.com")
+br.find_element_by_id("login_password").send_keys("******")
+br.find_element_by_id("loginbox_form").submit()
+
+from IPython import embed; embed()
+#once we submit the form, the home page will show up and we can further crawl and scrape. 
+el = br.find_element_by_class_name("profilesection")
+#+END_SRC
