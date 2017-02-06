@@ -96,7 +96,6 @@ def error(msg:String) = throw new Error(msg)  //(msg:String)Nothing
 + Scala compiler can usually deduce the correct type parameters from the value arguments of a function call
 + We can assume that all type parameters and type arguments are removed before evaluating the program. (/type erasure/). Java and scala are /type erasure/ but not C++(which keep type parameters at run time).
 + /object/(/Singleton/) cannot have a type parameter
-
 ** Type Bounds
 #+BEGIN_SRC scala
 def assertAllPos[S >:NonEmpty <: IntSet](r:S): S = 
@@ -108,6 +107,7 @@ class C[-A] {..}   //C is contravariant
 class C[A]{}      //C is nonvariant 
 #+END_SRC
 *** Covariance 
+/Covariance/ should not be allowed for mutable data structure! This is what Java Array get wrong.  
 +If 
 NonEmpty <: IntSet 
 implies: 
