@@ -277,7 +277,7 @@ struct B : A
     + C++ use /initialization list/ which is part of the constructors.   
   #+END_SRC
 * Abstract Class vs. Interface
-  Both Java and C++ have the concept of abstract class. But the concept is not quite the same. Abstract class cannot be instantiated. In c++, abstract class are the classes with pure virtual functions. C++ allows multiple inheritance and virtual inheritance. Java distinguishes /abstract class/. A class can extend at most one abstract class but implement many interface. An interface cannot have data member and all methods are public. 
+  Both Java and C++ have the concept of abstract class. But the concept is not quite the same. Abstract class cannot be instantiated. In c++, /abstract class/ are the classes with /pure virtual functions/. C++ allows /multiple inheritance/ and /virtual inheritance/. Java distinguishes /abstract class/. A class can extend at most one abstract class but implement many interface. An interface cannot have data member and all methods are public. 
 * Method Overriding
 + In java, all instance methods are virtual by default which is not the case in c++. C++, methods can be hiding or overriding. This turns out to be a source of errors. C++ introduces a new contextual keyword *override* to help.  
 * Abstract methods(Java) vs. pure virtual functions(c++)

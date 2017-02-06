@@ -180,6 +180,13 @@ df.count() #return number of row regardless NA or not(vs. Pandas)
 # number of columns
 len(df.columns)
 
+# show the first row  
+df.first()
+
+#only take the first n row; 
+#df.limit() return a new dataframe while head()/take() return a list of Row
+df.limit(1).collect() [Row(age=2, name=u'Alice')]
+
 # show unique values of a column 
 df.select('col_name').distinct().show()
 
@@ -191,6 +198,9 @@ df_train, df_test = df.randomSplit([0.8,0.2])
 >>> dataset = sqlContext.range(0, 100).select((col("id") % 3).alias("key")) 
 >>> sampled = dataset.sampleBy("key", fractions={0: 0.1, 1: 0.2}, seed=0) 
 >>> sampled.groupBy("key").count().orderBy("key").show() 
+
+#convert  row of vectors to np.array, /d/ below is a Row
+w2v_plot = np.array(w2v.rdd.map(lambda d: d.vector.toArray()).take(100))
 
 #+END_SRC
 * Spark MLlib

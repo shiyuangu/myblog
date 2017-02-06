@@ -1,0 +1,292 @@
+* Syntax 
++ Scala keeps the names of types and values in /different namespaces/
++ Type(values), Expression, definition(function def, value definition, parameters),  
++ Every value is a object; the type of each value is a class
++ Q:What does  "Type" refer to in scalar? 
+  A: Cannot find the definition. But from Coursera video. Looks like it's used loosely, "Type and Value" ~ "Class and Object". /Function/ which implement a /trait/ is referred to /Type/, /Option/ which implement a /trait/ is referred to /Type/, "Primitive Type" ect. 
+
+** Functions: 
++ Function types associate to the right, that is 
+/(Int => Int) => (Int,Int)=>(Int)/
+is equivalent to 
+/(Int => Int) => ((Int,Int)=>(Int))/
++ Method or any /def/ is not a function, but when it's used in place of a function type is expected, it is replace by /(x:Int) => f(x)/ which is a function oject (i.e., /eta-expansion/).
+
+*** call-by-name vs call-by-value 
+#+BEGIN_SRC java
+def callByValue(x: Int) = {
+//....
+}
+
+def callByName(x: => Int) = {
+//...
+}
+#+END_SRC
+
+#+END_SRC
+   
+*** Anonymous function 
+#+BEGIN_SRC scala
+//anonymous function
+(x:Int) => x*x*x 
+(x:Int, y:Int) => x+y
+//anonymous function is a syntactic sugar for 
+{ def f(x1:T1,x2:T2) = E;f} //f is an arbitrary, fresh name that's not yet used
+#+END_SRC
+
+*** Currying
+#+BEGIN_SRC 
+//currying
+def sum(f:Int => Int)(a: Int, b: Int): Int = 
+    if (a>b) 0 else f(a) + sum(f)(a+1,b)
+//In general, function with multiple parameter lists 
+def f(args_1)(args_2)...(args_n) = E 
+is a syntactic sugar for 
+def f(args_1)(args_2)...(args_n-1) = {def g(args_n)=E;g}
+//or for short
+def f(args_1)(args_2)..(args_n-1) = {args_n => E}
+//so 
+def f = (args_1 => (args_2 => ... (args_n =>E)))
+#+END_SRC
+
+** Forward reference 
+A function can call another function defined below it only if there is nothing else separating them. 
+** Singleton 
+Singleton are values and no evaluation happen(or it evaluates to itself) 
+** Import 
+#+BEGIN_SRC scala
+import week3.{Rational,Hello} //then no need for fully qualified name 
+import week3._ //wildcast import import everything
+#+END_SRC
+The following entities are automatically imported
++ All members of package /scala/
++ All members of package /java.lang/
++ All members of singleton object /scala.Predef/
+** Classes
+*** Traits
+can have concrete def for methods and fields, but not val 
+#+BEGIN_SRC scala
+trait Planar {
+def height: Int 
+def width: Int
+def surface = height * weight 
+}
+
+#+END_SRC
+*** Constructor
+Not /val/ are special, they can override method or implement abstract method in trait. 
+#+BEGIN_SRC 
+trait List[T]{
+  def isEmpty: Boolean
+  def head: T 
+  def tail: List[T]
+}
+class Cons[T](val head:T, val tail: list[T]) extends List[T]{
+  def isEmpty = false
+}
+#+END_SRC
+** Nothing  
+/Nothing/ is a subtype of every other type. There is no value of type /Nothing/. It is used to signal abnormal termination(/throw exc/). Note that /void/ in Java is /Unit/ which is different than /Nothing/
+#+BEGIN_SRC java
+def error(msg:String) = throw new Error(msg)  //(msg:String)Nothing
+#+END_SRC
+
+
+** Type Parameter
++ Scala compiler can usually deduce the correct type parameters from the value arguments of a function call
++ We can assume that all type parameters and type arguments are removed before evaluating the program. (/type erasure/). Java and scala are /type erasure/ but not C++(which keep type parameters at run time).
++ /object/(/Singleton/) cannot have a type parameter
+
+** Type Bounds
+#+BEGIN_SRC scala
+def assertAllPos[S >:NonEmpty <: IntSet](r:S): S = 
+#+END_SRC
+
+#+BEGIN_SRC scale
+class C[+A] {...}  //C is covariant 
+class C[-A] {..}   //C is contravariant 
+class C[A]{}      //C is nonvariant 
+#+END_SRC
+*** Covariance 
++If 
+NonEmpty <: IntSet 
+implies: 
+List[NonEmpty] <: List[IntSet]
+then we say 
+"List" is covariant type. 
+Covariance may not necessary be a right choice for parameterized type. 
+Consider Java example, say NonEmpty <: IntSet. The problem is due to the fact that Array[] in Java is /covariant/ and /mutable/
+#+BEGIN_SRC
+NonEmpty[] a = new NonEmpty[]{new NonEmpty(1,Empty,Empty)}
+IntSet[] b = a //reference assignment  
+b[0] = Empty  //a[0] is now a empty 
+#+END_SRC
+
+*** Variance Annotation 
+Say C[T] is parameterized type and A, B are types such that A<:B 
+There possible situations: 
+a). C[A] <: C[B] (covaraince) 
+b). C[A] >: C[B] (contravariance) 
+c). neither C[A] or C[B] is a subtype of the other  (nonvariant)   
+
+#+BEGIN_SRC scala
+trait Function1[-T,+U] {
+    def apply(x:T):U
+}
+#+END_SRC
+** Type Cast
+Note that Scala intentionally make the type cast not concise to discourage the use of type cast. 
+#+BEGIN_SRC scala
+x.isInstanceOf[T] (in Java  x.instanceof T)
+x.asInstanceOf[T] (in Java (T)x ) 
+#+END_SRC
+
+** Type Inference
+#+BEGIN_SRC scala
+def msort[T](xs:List[T])(lt: (T,T) => Boolean):List[T] = {...}
+val nums = List(2,-4,5,7,1)
+msort(nums)((x:Int,y:Int) => x<y)//which an also be more concise as 
+msort(nums)((x,y) => x<y) //Scala will analyze at msort() and nums and infer the type of x and y to be Int.  
+
+#+END_SRC
+
+** Pattern Matching 
+#+BEGIN_SRC scala
+def isort(xs:List[Int]):List[Int] = xs match { 
+case List() => List()
+case y::ys => insert(y,isort(ys))  //y match the head and ys matches the tail
+}
+
+
+def scalarProduct(xs:Vector[Double],ys:Vector[Double]):Double = 
+(xs zip ys).map{case (x,y) => x*y}.sum
+//In general, {case p1 =>e1.. case pn=>en} is a short hand for 
+//x match {p1=>e1..case pn=>en) 
+#+END_SRC
+
+#+BEGIN_SRC 
+def pack[T](xs:List[T]):List[List[T]] = xs match {
+case Nil => Nil 
+case x::xs1 => 
+    val (first, rest) = xs span (y=> y== x) 
+    first::pack(rest) 
+}
+
+#+END_SRC
+** Implicit Parameters
+
+** Collections: 
+http://docs.scala-lang.org/tutorials/FAQ/collections
++ /String/ and /Array/ in Scala is from Java, they are not subclass of sequence but can convert to /Seq/ 
+
+#+BEGIN_SRC scala
+#test Prime 
+def isPrime(n:Int):Boolean =  (2 until n) forall (d => n %d !=0)
+ def isPrime(n:Int):Boolean =  (2 until n) forall (_%d !=0 )
+
+#Q: what happen when we call map on a Range. The result is no longer a Range? 
+#A: The follow generate a vector pairs; the type inference figures that /Range/ is a /IndexedSeq/ and the default implementation of /IndexedSeq/ is /Vector/
+(1 until 10) map (i=>(1 until i) map (j => (i,j)))
+
+# For expression, /p<-persons/ is call a /generator/. In more general form, 
+#/p<-e/ e can be an expression whose value is a collection and p is a pattern 
+for (p<-persons if p.age>20) yield p.name 
+//which is equiv. to 
+persons filter (p=>p.age>20) map (p=>p.name)
+
+# A more general form for-expression 
+for(s) yield e 
+# or 
+for {s} yield e //{.. } allows multi-lines without semicolons
+#to test a prime, we could also write. 
+for {
+   i <- 1 until n #the order of these two matters!
+   j <- 1 until i
+   if isPrime(i+j)
+} yield (i,j)
+
+#example:scalarProduct using for expression 
+def scalarProduct(xs:List[Double], ys:List[Double]):Double = 
+    (for ((i,j) <- xs zip ys) yield i*j).sum
+
+#+END_SRC
+*** Map
+#+BEGIN_SRC scala
+#new op, concat a map, concat string 
+#Note the use of Some(..) since /terms get ep/ return /Option/ 
+object polynomial {
+  class Poly(val terms: Map[Int,Double]) {
+    def + (other:Poly) = new Poly(terms ++ (other.terms map adjust))
+    def adjust(term: (Int, Double)) : (Int, Double) = {
+      val (exp, coeff) = term
+      terms get exp match {
+        case Some(coeff1)=> exp-> (coeff1 + coeff )
+        case None => exp -> coeff
+      }
+    }
+    override def toString:String =
+      (for ((exp,coeff) <- terms.toList.sorted.reverse) yield coeff+"x^"+exp) mkString "+"
+  }
+  val p1 = new Poly(Map(1->2.0, 3->4.0, 5->6.2))
+  val p2 = new Poly(Map(0->3.0,3->7.0))
+  p1+p2
+}
+#+END_SRC
+#+BEGIN_SRC scala
+#a more concise way using Map with default value 
+object polynomial {
+  class Poly(val terms0: Map[Int,Double]) {
+    def this(bindings: (Int, Double)*) = this(bindings.toMap) //Note the use of repeated pairs as input arguments  
+    val terms = terms0 withDefaultValue 0.0
+    //++ will update the key  instead of adding it so we need /adjust/ method
+    def + (other:Poly) = new Poly(terms ++ (other.terms map adjust))
+    def adjust(term: (Int, Double)) : (Int, Double) = {
+      val (exp, coeff) = term
+      exp-> (coeff+terms(exp))
+    }
+    override def toString:String =
+      (for ((exp,coeff) <- terms.toList.sorted.reverse) yield coeff+"x^"+exp) mkString "+"
+  }
+  val p3 = new Poly(1->2.0,10->0.5)
+}
+#+END_SRC
+Anther version of Polynomial using foldLeft. Note that the use of Tuple2 which is the same as exp->(terms(exp)+coeff). Scala defines an implicit conversion of "->" to /Tuple2/ in /Predef/. http://stackoverflow.com/questions/4980515/scala-maps-operator. Also, the foldLeft is more efficient than the concat version(/++/) because it avoid creation of an intermedia Map. 
+#+BEGIN_SRC scala
+object polynomial {
+  class Poly(val terms0: Map[Int,Double]) {
+    def this(bindings: (Int, Double)*) = this(bindings.toMap)
+    val terms = terms0 withDefaultValue 0.0
+    def + (other:Poly) = new Poly((other.terms foldLeft terms)(addTerm))
+    def addTerm(terms: Map[Int,Double], term: (Int, Double)) : Map[Int, Double] = {
+      val (exp, coeff) = term
+      terms + Tuple2(exp,(terms(exp) + coeff)) // Tuple2 is the same as exp->(terms(exp)+coeff)
+    }
+    override def toString:String =
+      (for ((exp,coeff) <- terms.toList.sorted.reverse) yield coeff+"x^"+exp) mkString "+"
+  }
+  val p1 = new Poly(Map(1->2.0, 3->4.0, 5->6.2))
+  val p2 = new Poly(Map(0->3.0,3->7.0))
+  val p3 = new Poly(1->2.0,10->0.5)
+  p1+p2
+  Map(2->3.0) + Tuple2(1,0.1)//but Map(2->3.0) + (1, 0.1) will error. 
+ 
+
+}
+#+END_SRC
+
+** Question 
++ 
+#+BEGIN_SRC 
+scala> val a = if(true) 1 else false
+a: AnyVal = 1
+
+What a is /AnyVal/ not int? 
+#+END_SRC 
+
+
++ What the maximize recursive depth for scala; 
+A: dependents on JVA for maximum stack size ('-Xss' argument), it's typical set to ('-Xss4m') for scala. 
+http://stackoverflow.com/questions/6591452/how-to-increase-scala-stack-size
+http://stackoverflow.com/questions/3700459/how-to-increase-the-java-stack-size
+
+ 

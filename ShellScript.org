@@ -257,6 +257,13 @@ git checkout gh-pages
 git checkout stash@{0} -- documentation/
 git stash pop #clear the last stash item 
 #+END_SRC
+** /grep/
+split a long line into words; /-E/ means [[https://en.wikipedia.org/wiki/Regular_expression#POSIX_extended][Posix Extended Regex]]
+#+BEGIN_SRC shell
+#split into lines each of 4 words
+echo "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18"|grep -o -E '\w+(\W+\w+){0,4}'
+
+#+END_SRC
 * Package Management
 ** list all installed package 
 apt list --installed (for ubuntu 14.04)
