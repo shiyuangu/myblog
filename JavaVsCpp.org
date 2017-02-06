@@ -378,7 +378,7 @@ int main(int argc, char* argv[]){
 // In non-default ctor
 //In Base
   #+END_SRC
-  + In java uses the concept of covariant, and no constructor is called. It's just like pass by reference in c++. 
+ + In java, and no constructor is called. It's just like pass by reference in c++. It comes down to whether a type is a subtype of another. It becomes tricky for /Collections/. /Array/ is /covariant/, which means that String[] is a subclass of Object[]; /List/ is /invariant/ which means /List<String>/ is not a subclass of /List<Object>/. Note that a mutable collection should not be /covariant/ and that's the problem of /Array/.  
 #+BEGIN_SRC java
    class Base{
 	public Base(Derived d) {System.out.println("In Base non-default ctor");}
@@ -442,3 +442,19 @@ public class assignment2 {
 #+END_SRC
 
 
+
+* Generic vs Template
++ In Java, Generic class and Generic methods are /type erasure/ , 
+http://stackoverflow.com/questions/339699/java-generics-type-erasure-when-and-what-happens
+https://docs.oracle.com/javase/tutorial/java/generics/erasure.html 
+https://docs.oracle.com/javase/tutorial/java/generics/genTypes.html
+*** List<?> vs List<Object> 
+"?" means one type but unknown. Since it's unknown, we cannot add any element(except null) to it. Otherwise, we would break the invariance. 
+#+BEGIN_SRC Java 
+int f(Set<?> s1, Set<?> s2) {
+s1.add(1) //complier error  
+}
+#+END_SRC
+it's fine to use List<Object> to define a list to allow insert arbitrary object. However, Since List is 'invariant', f(List<Object> a) only expect List<Object> as input argument, not List<String>. 
+
+ 
