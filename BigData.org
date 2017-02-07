@@ -319,6 +319,7 @@ val V: Matrix = svd.V #V is a local matrix.for the first k svd components, V is 
 Rf. /Learning Spark/
 + Local vector/matrix depends on the API. for Python, we can usually directly pass numpy array or use the /pyspark.mllib.linalg.Vectors/ which is a wrapper round numpy. In particular, we can get the numpy array from pyspark array using the /toArray/ method ; for Scala/Java, it's /org.apache.spark.mllib.linalg.Vectors/ which are wrappers around /Breeze/ array. spark mllib around are primarily meant for data representation and do not provide arithmetic operations such as addition and subtraction. 
 + Distributed matrices are wrappers around RDD[]. 
++ Note that the indices of /IndexedRowMatrix/ might not be consecutive(http://spark.apache.org/docs/latest/api/python/pyspark.mllib.html#pyspark.mllib.linalg.distributed.IndexedRowMatrix). When a /IndexedRowMatrix/ multiplies a local matrix, it converts to /RowMatrix/ and then zip back the indices. 
 #+BEGIN_SRC scala
 scala> val idx = "^v([0-9]+)$".r
 idx: scala.util.matching.Regex = ^v([0-9]+)$
