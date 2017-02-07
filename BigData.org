@@ -307,6 +307,43 @@ import scipy.sparse as sps
 sv1 = Vectors.sparse(3,[0,2],[1.0,3.0]) # the first integer is the size
 sv2 = sps.csc_matrix(..)
 #+END_SRC
+SVD 
+#+BEGIN_SRC scala
+//From the book of Learning Spark 
+val svd = mat.computeSVD(3,computeU=true) //the type of svd is SingularValueDecomposition[RowMatrix,Matrix] 
+val s: Vector = svd.s
+val V: Matrix = svd.V #V is a local matrix.for the first k svd components, V is of size n by k 
+#+END_SRC
+
+*** Matrix multiplcation 
+Rf. /Learning Spark/
++ Local vector/matrix depends on the API. for Python, we can usually directly pass numpy array or use the /pyspark.mllib.linalg.Vectors/ which is a wrapper round numpy. In particular, we can get the numpy array from pyspark array using the /toArray/ method ; for Scala/Java, it's /org.apache.spark.mllib.linalg.Vectors/ which are wrappers around /Breeze/ array. spark mllib around are primarily meant for data representation and do not provide arithmetic operations such as addition and subtraction. 
++ Distributed matrices are wrappers around RDD[]. 
+#+BEGIN_SRC scala
+scala> val idx = "^v([0-9]+)$".r
+idx: scala.util.matching.Regex = ^v([0-9]+)$
+scala> val rdd = sc.parallelize(List(
+      (("v1","v1"),2),(("v1","v2"),4),  
+      (("v1","v3"),1),(("v2","v2"),5),  
+      (("v2","v3"),1),(("v3","v3"),2)   
+      ))                                
+scala> val mat = new CoordinateMatrix(rdd.map {case ((idx(i),idx(j)),v) =>
+      MatrixEntry(i.toLong-1,j.toLong-1,v.toDouble) 
+      }).toIndexedRowMatrix                         
+                                                  
+
+//we can multiply a distributed matrix by a local matrix(only in Scala API, not Python)
+val vector = Matrices.dense(3,1,Array(4.0,1.0,5.0))
+mat.multiply(vector).rows.map(println).collect()
+
+//or we can do it in map-reduce way 
+val vec = sc.parallelize(List(("v1",4),("v2",1),("v3",5)))
+val t = (rdd.map {case ((i,j),v) => (j,(i,v))} join vec).values map {case ((i,v1),v2) => (i,v1*v2)} reduceByKey(_+_)
+
+//If we want to multiply two distributed matrices, both of them needs to be block matrix. 
+
+
+#+END_SRC
 ** Feature Engineering 
 *** Tokenizer 
 *** TF: 
@@ -442,4 +479,3 @@ http://stackoverflow.com/questions/37903288/what-do-colum-rawprediction-and-prob
 *** What's aggregationDepth param in LogisticRegression ctor? 
 This is related to an improvement of MLlib regarding to MapReduce Paradigm. Multi-level aggregation tree is used to combined partially on a small set of executors before they sent to the drivers which is dramatically reduces the load of the driver. https://databricks.com/blog/2014/09/22/spark-1-1-mllib-performance-improvements.html
 Note this WIP: https://issues.apache.org/jira/browse/SPARK-17090
-

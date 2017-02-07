@@ -274,6 +274,12 @@ object polynomial {
 }
 #+END_SRC
 
+** Working in the scala shell 
+#+BEGIN_SRC python 
+//get all the methods 
+mat.getClass.getMethods.map(_.getName).sorted
+
+#+END_SRC
 ** Question 
 + 
 #+BEGIN_SRC 
