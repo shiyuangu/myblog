@@ -480,3 +480,53 @@ http://stackoverflow.com/questions/37903288/what-do-colum-rawprediction-and-prob
 *** What's aggregationDepth param in LogisticRegression ctor? 
 This is related to an improvement of MLlib regarding to MapReduce Paradigm. Multi-level aggregation tree is used to combined partially on a small set of executors before they sent to the drivers which is dramatically reduces the load of the driver. https://databricks.com/blog/2014/09/22/spark-1-1-mllib-performance-improvements.html
 Note this WIP: https://issues.apache.org/jira/browse/SPARK-17090
+
+* AWS-EC2
+** Boto Script 
+#+BEGIN_SRC python 
+import boto.ec2
+conn = boto.ec2.connect_to_region("us-east-1")
+#conn.get_all_security_groups()[1].id #u'sg-7ea8bf1a'
+reservation = conn.run_instances("ami-d05e75b8",key_name = "sgu-ec2-all", instance_type = "t2.micro", security_groups=["launch-wizard-1"]) #aws_access_key is in ~/.boto or set in env or pass in directly
+reservations = conn.get_all_reservations()
+inst = reservations[0].instances[0] #get the instance, inst? show all attribute, include the ip_address, type, ect. 
+statuses = conn.get_all_instance_status()
+#make sure instance is available
+conn.terminate_instances(instance_ids = [inst.id])
+#+END_SRC 
+** system_status check vs. instance_status check 
+system_status is for the underlying EC2 system that are used by each individual  instance. System status problem requires AWS involvement to repair. Instance status is for individual instances. The customer can fix instance status problems.  
+** Q: EBS device mapping? instance_profile? initiliazation script(user-data)
+** Q: how to use VPC
+* Setting up Spark-EC2
+
+** dissect spark_ec2.py
+./spark-ec2 -k sgu-ec2-all -i $HOME/.ssh/sgu-ec2-all.pem -s 2 launch spark_test  
+-s: the number of slave 
+'launch': the action 
+'spark_test': cluster_name 
+/cluster_name/ is used to identify the security group.   
+*** launch_cluster
+1. get or create security group /cluster_name/-master , /cluster_name/-slaves
+2. authorize the security group (handle vpc)  so that master can access slaves
+3. check whether the cluster has already exist /get_exsiting_cluster/
+4. get with AMI with Spark
+5. create EBS device mapping so that we can add EBS volumne if asked to (vol.size, vol.type, attached_name(/dev/sds,/dev/sdt,ect.), delete_on_termination).
+6. launch slave instance or request spot instances (the instances is collected in /slave_nodes/
+7. launch master instance(only one, not a spot instance)
+8. tag the master and slaves 
+9. return /master_nodes/ and /slave_nodes/
+*** get_existing_cluster
+return /master_instance/, /slave_instances/
+find /cluster_name/+'-master' and /cluster_name/+'-slaves'
+*** wait_for_cluster_state
+make sure all master_nodes, and slave_instances are ssh-ready. 
+
+*** setup_cluster
+Q: What is swap space (specified by input argument =-swap=)?
+Q: what is tachyon?   
+1. on master: create a ssh key and copy to the slaves. 
+2. clone spark-ec2 git-repos 
+3. prepare a local file with all necessary parameters and then copy the file to master. 
+4.  deploy other user files (parameter /deploy_root_dir/) to master
+5. run /setup_spark_cluster/, which run spark-ec2/setup.sh, spark-ec2/setup.sh
