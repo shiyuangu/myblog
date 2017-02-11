@@ -498,6 +498,79 @@ conn.terminate_instances(instance_ids = [inst.id])
 system_status is for the underlying EC2 system that are used by each individual  instance. System status problem requires AWS involvement to repair. Instance status is for individual instances. The customer can fix instance status problems.  
 ** Q: EBS device mapping? instance_profile? initiliazation script(user-data)
 ** Q: how to use VPC
+** Q: How to run a script after the instance starts?
+http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html
+https://imiloainf.wordpress.com/2012/01/04/use-boto-run-user-data-in-aws-instance/
+#+BEGIN_SRC python
+import boto
+from boto.ec2.connection import EC2Connection
+import time
+ 
+ami_id = '----'                                                  # ami-ubuntu-64 (settedup) use t1.micro as instance type
+key_pair_name = '----'
+AWS_ACCESS_KEY_ID = '----'
+AWS_SECRET_ACCESS_KEY = '----'
+ 
+ec2conn = EC2Connection(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+ 
+test_script_00 = """#!/bin/bash
+sudo apt-get update
+sudo apt-get install imagemagick
+"""
+ 
+test_script_01 = """#!/usr/bin/env python
+ import boto
+ from boto.s3.key import Key
+ 
+AWS_ACCESS_KEY_ID = '-------'
+AWS_SECRET_ACCESS_KEY = '----'
+ 
+bucket_name = 'demo-test'
+conn_s3 = boto.connect_s3(AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY)
+bucket = conn_s3.get_bucket(bucket_name)
+ 
+k=Key(bucket)
+k.key='images/rose111105.jpg'
+k.copy('demo-test', 'images/rose111105copy6.jpg')
+"""
+ 
+test_script ="""#!/usr/bin/env python
+import smtplib
+import boto
+from boto.s3.key import Key
+import numpy as np
+import sys
+ 
+AWS_ACCESS_KEY_ID = '-----' # Your AWS_KEY
+AWS_SECRET_ACCESS_KEY = '---------' # Your Secret KEY
+ 
+def send_notice(msg='testing'):
+    fromaddr = '******@gmail.com'
+    toaddrs = '******@gmail.com'
+    username = '******'
+    password = '******'
+     
+    server = smtplib.SMTP('smtp.gmail.com:587')
+    server.starttls()
+    server.login(username,password)
+    server.sendmail(fromaddr, toaddrs, msg)
+    server.quit()
+ 
+send_notice("start processing")
+#DO YOUR PROCESS
+send_notice("Finishing...")
+"""
+ 
+my_reservation = ec2conn.run_instances(ami_id,
+                                       instance_type=instance_type,
+                                       key_name=key_pair_name,
+                                       user_data=test_script)
+ 
+instance = my_reservation.instances[0]
+while not instance.update() == 'running':
+    time.sleep(5)
+instance.stop()
+#+END_SRC
 * Setting up Spark-EC2
 
 ** dissect spark_ec2.py
@@ -510,7 +583,8 @@ system_status is for the underlying EC2 system that are used by each individual 
 1. get or create security group /cluster_name/-master , /cluster_name/-slaves
 2. authorize the security group (handle vpc)  so that master can access slaves
 3. check whether the cluster has already exist /get_exsiting_cluster/
-4. get with AMI with Spark
+4. get with AMI with Spark 
+   which looks up git-repos based on region and instance type: eg. 'https://raw.github.com/amplab/spark-ec2/branch-2.0/ami-list/us-east-1/pvm'
 5. create EBS device mapping so that we can add EBS volumne if asked to (vol.size, vol.type, attached_name(/dev/sds,/dev/sdt,ect.), delete_on_termination).
 6. launch slave instance or request spot instances (the instances is collected in /slave_nodes/
 7. launch master instance(only one, not a spot instance)
@@ -527,6 +601,6 @@ Q: What is swap space (specified by input argument =-swap=)?
 Q: what is tachyon?   
 1. on master: create a ssh key and copy to the slaves. 
 2. clone spark-ec2 git-repos 
-3. prepare a local file with all necessary parameters and then copy the file to master. 
+3. prepare a local file with all necessary parameters filled  and then copy the file (rsync) to master. 
 4.  deploy other user files (parameter /deploy_root_dir/) to master
 5. run /setup_spark_cluster/, which run spark-ec2/setup.sh, spark-ec2/setup.sh
