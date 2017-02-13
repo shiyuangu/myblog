@@ -498,7 +498,13 @@ conn.terminate_instances(instance_ids = [inst.id])
 system_status is for the underlying EC2 system that are used by each individual  instance. System status problem requires AWS involvement to repair. Instance status is for individual instances. The customer can fix instance status problems.  
 ** Q: EBS device mapping? instance_profile? initiliazation script(user-data)
 ** Q: how to use VPC
+After 2013/12, each account comes with a default VPC which has a default subnet in each availability zone. If we don't specify a subnet when launching an intance, the instance is launch into the default VPC and default subnet.  We can then create a *security group* to manage the network traffic. 
+http://docs.aws.amazon.com/cli/latest/reference/ec2/authorize-security-group-ingress.html
+http://stackoverflow.com/questions/24232849/source-security-group-isnt-working-as-expected-in-aws
+https://aws.amazon.com/vpc/
+
 ** Q: How to run a script after the instance starts?
+Use the user-data kwarg in /image.run(..)/
 http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html
 https://imiloainf.wordpress.com/2012/01/04/use-boto-run-user-data-in-aws-instance/
 #+BEGIN_SRC python
