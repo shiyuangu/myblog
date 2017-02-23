@@ -5,6 +5,12 @@
 #+DATE: <2014-12-23 Tue>
 #+CATEGORY: 
 -----------------------
+* Quoting
+#+BEGIN_SRC shell
+#Note that we use double quotes outmost so that the shell substitute the $SPARK_VERSION; the single quote insides a double quote stay as single quote 
+python -c "print '$SPARK_VERSION'.split('|')[1] "
+
+#+END_SRC
 * Flow Control 
 #+BEGIN_SRC shell
 for i in {1..12};do
@@ -264,6 +270,59 @@ split a long line into words; /-E/ means [[https://en.wikipedia.org/wiki/Regular
 echo "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18"|grep -o -E '\w+(\W+\w+){0,4}'
 
 #+END_SRC
+** /ssh/
+*** port forwarding
+#+BEGIN_SRC shell 
+# forward the local port of 9000 to port 5432 on server.com. Note that localhost refers to server.com since it's from sever.com perspective 
+ssh -L 9000:localhost:5432 user@server.com
+
+#Imagine you’re at private network and imgur.com is being blocked. To get around this we can create a tunnel through a server(example.com) which ican access Imgur. This commands say forward local port 9000 to imgur.com:80 through tunnel example.com. Since port 80 is the default http, we can then open the  browser and go to http://localhost:9000.
+$ ssh -L 9000:imgur.com:80 user@example.com
+
+#+END_SRC
+*** /ssh-agent/
+`ssh-agent -s` not only starts the agent but also generate two environment variables SSH_AUTH_SOCK, SSH_AGENT_PID which will be used by /ssh/. This is why we need to eval `ssh-agent -s` as follows. 
+http://blog.joncairns.com/2013/12/understanding-ssh-agent-and-ssh-add/
+http://stackoverflow.com/questions/17846529/could-not-open-a-connection-to-your-authentication-agent/4086756#4086756
+http://sshkeychain.sourceforge.net/mirrors/SSH-with-Keys-HOWTO/SSH-with-Keys-HOWTO-6.html
+http://unix.stackexchange.com/questions/90853/how-can-i-run-ssh-add-automatically-without-password-prompt
+http://rabexc.org/posts/pitfalls-of-ssh-agents
+
+#+BEGIN_SRC shell
+~/: ssh-agent -s # We should eval the `ssh-agent -s` instead  
+SSH_AUTH_SOCK=/tmp/ssh-PmjcyIfK1TLB/agent.4307; export SSH_AUTH_SOCK;
+SSH_AGENT_PID=4308; export SSH_AGENT_PID;
+echo Agent pid 4308;
+
+eval `ssh-agent -s` 
+ssh-add /path/to/key
+
+#For security reason, make sure to kill the agent process before logout 
+kill $SSH_AGENT_PID #or the following 
+trap "kill $SSH_AGENT_PID" 0
+#+END_SRC
+*** Q: How to disable host-key-checking? 
+http://askubuntu.com/questions/87449/how-to-disable-strict-host-key-checking-in-ssh
+Note that applications(eg. Hadoop in hadoop-env.sh) has configurations to usually disable HostKeyChecking. 
+
+** /netstat/
+#+BEGIN_SRC 
+#only root can see all info; 
+#-t: TCP; -u: UDP;  -l: listening; -p: PID; -n: numeric port; -e: extended info 
+ netstat -tulpne 
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       User       Inode       PID/Program name
+tcp        0      0 127.0.1.1:53            0.0.0.0:*               LISTEN      0          14870       885/dnsmasq     
+tcp        0      0 127.0.0.1:25            0.0.0.0:*               LISTEN      0          17612       1503/master     
+tcp6       0      0 ::1:25                  :::*                    LISTEN      0          17613       1503/master     
+udp        0      0 0.0.0.0:5353            0.0.0.0:*                           111        12536       604/avahi-daemon: r
+udp        0      0 0.0.0.0:60023           0.0.0.0:*                           111        12538       604/avahi-daemon: r
+udp        0      0 127.0.1.1:53            0.0.0.0:*                           0          14869       885/dnsmasq     
+udp        0      0 0.0.0.0:68              0.0.0.0:*                           0          57521       22591/dhclient  
+udp        0      0 0.0.0.0:631             0.0.0.0:*                           0          25538       2853/cups-browsed
+udp6       0      0 :::5353                 :::*                                111        12537       604/avahi-daemon: r
+udp6       0      0 :::41185                :::*                                111        12539       604/avahi-daemon: r
+#+END_SRC
 * Package Management
 ** list all installed package 
 apt list --installed (for ubuntu 14.04)
@@ -272,6 +331,10 @@ dpkg-query -L openjdk-8-jdk
 ** switch version
 sudo update-alternatives --config javac
 which lists all alternatives and prompts which version to switch to 
+* /sudo/
+#+BEGIN_SRC shell
+sudo -s #this create a shell with root as user
+#+END_SRC
 * Footnotes
 
 [fn:1] [[http://en.wikipedia.org/wiki/POSIX][WIKI-POSIX]]

@@ -1,18 +1,147 @@
 * Spark
+
 ** RDD: 
 + Action vs. Transformation 
-+ Persistence, Storage level 
++ Persistence, Storage level: 
+Where(memory or disk) and how to persist(serialized or unserialized) 
 each time we call a new action, the entire RDD must be computed "from scratch". To avoid this inefficiency, users can /persist/ immediate results. 
+*** Transformations
+Elementwise and pseduo-set 
+
+*** Actions
++ /reduce()/, /fold()/
+  return type has to be the element type of RDD
++ /aggregate()/
+  can be any return type; caller needs to provides two functions, one for reduction, one for merging two accumulators, given that each node accumulates its own results locally 
+
++ Use /foreach/ if no value needs to return. 
+
+Q: What's the difference between /fold()/ vs. /reduce()/
+Practical difference between these methods in Spark is only related to their behavior on empty collections and ability to use mutable buffer (arguably it is related to performance)
+http://stackoverflow.com/questions/36056895/reduce-vs-fold-in-apache-spark
+http://stackoverflow.com/questions/34529953/why-is-the-fold-action-necessary-in-spark
+
+ 
+*** Specialized RDD: DoubleRDDFunctions, PairRDDFunction
++ More functions are available for JavaDoubleRDD. We can use /rdd.mapToDouble(..)/ to get a JavaDoubleRDD so that /mean()/,/variance()/ is available.  
++ In Scala, Implicit conversion happens to convert RDD<Double> to DoubleRDD.  
+
+Gotcha: 
++ Q: /reduce/ fails when applied to key-values pair? 
+A: /reduce/ needs to return a key-values pair to continue the chain. For example, in the /word-count/, if we want to just count the total number of words from a RDD[(word,n)], we don't care the first one entry of the tuple but we still need to return a tuple in the reduce function. 
+#+BEGIN_SRC python 
+rdd = sc.textFile("r8_no_stop.txt")
+input = rdd
+tokenized = input.map(lambda l: l.split("\t")).filter(lambda l: l.size>0)
+tokenized.map(lambda l: (l[0],1)).reduceByKey(lambda a,b: a+b).reduce(lambda x,y: x[1]+y[1]) #error: must return a tuple  
+tokenized.map(lambda l: (l[0],1)).reduceByKey(lambda a,b: a+b).reduce(lambda x,y: ("x",x[1]+y[1]))
+
+#+END_SRC
+ 
+**** PairRDD
+***** Q: can the tuple be three tuple? 
+A: No, only one value seems to be recognized by /mapValues/
+#+BEGIN_SRC  python
+In [9]: rdd_a.collect()
+Out[9]: [('a', 1, 2), ('a', 2, 3), ('b', 4, 5)]
+In [10]: rv = rdd_a.mapValues(lambda x:x); rv.collect()
+Out[10]: [('a', 1), ('a', 2), ('b', 4)]
+#+END_SRC
+
+***** Q: join vs. cogroup 
+A: /RDD<K,V>.join(RDD<K,W>)/ return RDD<K,(V,W)> while /RDD<K,V>.cogroup(RDD<K,W>)/ return /RDD<K,(Seq[V],Seq[W])>. Also, in case of  duplicated keys, /join/ return a RDD with duplicated keys (similar as SQL handle join)  while the return of /cogroup/ has no duplicated key; There is also a function call groupByKey  which can use to handles RDD with duplicated keys. 
+#+BEGIN_SRC python 
+In [20]: rdd_a = sc.parallelize([('a',2), ('a',3),('b',4)])
+
+In [21]: rdd_b = sc.parallelize([('a',5), ('a',6),('b',7)])
+
+In [22]: rdd_a.cogroup(rdd_b).collect()
+Out[22]: 
+[('a',
+  (<pyspark.resultiterable.ResultIterable at 0x7fa2922172d0>,
+   <pyspark.resultiterable.ResultIterable at 0x7fa292157850>)),
+ ('b',
+  (<pyspark.resultiterable.ResultIterable at 0x7fa2921578d0>,
+   <pyspark.resultiterable.ResultIterable at 0x7fa292157910>))]
+
+#convert the return value from cogroup to RDD 
+In [24]: rdd_a.cogroup(rdd_b).mapValues(lambda x: (list(x[0]),list(x[1]))).collect()
+Out[24]: [('a', ([2, 3], [5, 6])), ('b', ([4], [7]))]        
+
+In [27]: rdd_a.groupByKey().mapValues(lambda x: list(x)).collect()
+Out[27]: [('a', [2, 3]), ('b', [4])]
+
+# join 
+In [28]: rdd_a.join(rdd_b).collect()
+Out[28]: [('a', (2, 5)), ('a', (2, 6)), ('a', (3, 5)), ('a', (3, 6)), ('b', (4, 7))]
+
+#+END_SRC 
+
+
+*** Partitioner 
+**** Q: What's the default partitioner? 
+A: Depends on the number of executor and the number of cores of the executors. Cf. http://stackoverflow.com/questions/24877970/defaultminpartitions-in-textfile. The default number of partition depends on the the input format, for HDFS, it's 64MB per partition. There is a discussion for how many partition should be the default for textFile. https://github.com/mesos/spark/pull/718
+
+**** Q: for binary operation(eg., /rdd_a.join(rdd_b)/), which partitionar is set on the output? 
+A: If both /rdd_a/ and /rdd_b/ has partitioner set, it will be /rdd_a/'s partitioner; If only one of /rdd_a/ and /rdd_b/ has partitioner set, it will be that partitioner. Otherwise, it will be the a hash partitioner by default, with the number of partitions set to the level of parallelism of the operation. 
+*** Shuffle
+
++ Q: When does "Shuffle" happen? 
+A: Transformation may involve shuffling. Shuffle only happen when action occurs. 
+
++ For wide dependencies(i.e, Shuffle), spark currently materialize intermediate records on the nodes holding parent partitions to simplify fault recovery, much like MapReduce materializes map outputs. (Cf. Spark White paper). The option /spark.shuffle.memoryFration/ controls the total amount of memory used in shuffle-related buffers. 
+
+ 
+
+
 ** Programming Framework 
 http://spark.apache.org/docs/latest/programming-guide.html
-*** Session vs. Context 
+Cf. Learning Spark 
++ In Spark, there is no substantial benefit to write a single complex map instead of chaining together many simple operations. Thus, users are free to organize their program into small, more manageable operations. 
+
+*** Job, Stages, Tasks, 
+/Job/: the set of stages for a particular action. 
+/Stage/: In the simplest case, the scheduler outputs one stage for each RDD. In more complex cases, multiple RDDs are collapsed into a single stage(/pipeline/,/short-circuit/
+/task/: A physical stage will launch tasks each do the same thing but on specific partitions of data.
+
+*** Tunning and Debugging 
++ Cache serialized objects instead of raw java object (use /MEMORY_ONLY_SER/,/MEMORY_AND_DISK_SER/). Caching serialized objects will slightly slow down the cache operation due to the cost of serialization. But it can substantially reduce the time spent on garbage collection in the JVM, since many individual records can be stored as a single giant serialized buffer. The is because the cost of GC scales with the number of objects on the heap, not the number of bytes of the data. We can find the  GC time in the application UI (driver-node:4040). 
+
+*** Session vs. Context
++ SparkContext represents a connection to a computing cluster, /pyspark/ has created a SparkContxt /sc/
++  SparkSession is introduced in Spark 2.0 and aims to provided simplified access and unified Functionality (like sql, create dataframe) https://databricks.com/blog/2016/08/15/how-to-use-sparksession-in-apache-spark-2-0.html
+
 ** terminology 
 Slice  = Partition 
 ** Text File: 
 + By default, Spark creates one partition for each block of the file (blocks being 128MB by default in HDFS), but you can also ask for a higher number of partitions by passing a larger value. Note that you cannot have fewer partitions than blocks.
 + Q: How to know the record to have keys or not? 
-TODO: read more about InputFormat in general 
+TODO: read more about InputFormat in general
+
++ Q: Where does /rdd.saveAsTextFile(..)/ save the result? 
++ A: when HDFS exists, rdd.saveAsTextFile("/tmp/filename") saves to the HDFS system. In this case, the /filename/ is actually a directory under which there are the following files: _SUCCESS,  part-00000, part-00001, ect. If we ant to save the file to local file system, we should use /rdd.saveAsTextFile("file:///tmp/filename"). In this case, each executor save part of the results to their local file system, in executor 1, it's /tmp/filename/_temporary/task_201702192357_0024_m_00000/part-0000, in executor 2, it's /tmp/filename/_temporary/taks_201702192357_0024_m_00001/part-00001, ect. In the driver, it only has /tmp/filename/_SUCCESS without the _temporary and the part files. 
+
++ Q: what happen when /sc.textFile(...)/ read a file not in HDFS? 
+A: In the presence of HDFS, if we use sc.textFile("/tmp/filename"), Spark will read /tmp/filename from HDFS. If we want to read from local file system, we should use sc.textFile("file:///tmp/filename"). In these case, /tmp/filename should exist in each executor. This is usaully the case when NFS is mounted at the same path on each node. If the file exist in each node(executor and driver) but different, the result seems to un-defined (sometime with EOF error, sometime succeed but the result is not the same as would be read local from each node). If all file present in all node and the same, /sc.textFile(...)/ seems always succeed and the record is not duplicated. 
+
+ 
 #+END_SRC 
+
+** Spark UI
++ Web UI: http://hostname:4040 on the machine where driver is running. One caveat is that in the case of YARN cluster mode, where the application driver runs inside the cluster, you should access the UI through YARN Resource manager, which proxies requests directly to the drive. 
++ Standalone cluster: http://hostname:8080
++ HDFS: http://hostname:50070
+Note that spark-ec2 install two HDFS: ephemeral-hdfs and persistent-hdfs. By default, only ephemeral-hdfs is starting when we "launch" the cluster. 
+** Monitoring and Tuning 
++ Use the Environment Tab in UI 
++ spark-submit --help 
++ http://spark.apache.org/docs/latest/configuration.html
++ Extra Java Option 
+#+BEGIN_SRC shell
+./bin/spark-submit --name "My app" --master local[4] --conf spark.eventLog.enabled=false
+  --conf "spark.executor.extraJavaOptions=-XX:+PrintGCDetails -XX:+PrintGCTimeStamps" myApp.jar
+#+END_SRC
+ 
 * Spark SQL
 ** RDD vs. Dataset vs. DataFrame
 http://spark.apache.org/docs/latest/sql-programming-guide.html#datasets-and-dataframes
@@ -609,4 +738,90 @@ Q: what is tachyon?
 2. clone spark-ec2 git-repos 
 3. prepare a local file with all necessary parameters filled  and then copy the file (rsync) to master. 
 4.  deploy other user files (parameter /deploy_root_dir/) to master
-5. run /setup_spark_cluster/, which run spark-ec2/setup.sh, spark-ec2/setup.sh
+5. run /setup_spark_cluster/, which run spark-ec2/setup.sh which fills in the package config files under /spark-ec2/templates/ and write the conf to each individual package. Note eventually after a package is setup, part of the package is from other site(eg. S3) and part of it is from the /templates/ directory.  
+ 
+
+
+** A simple Version
+#+BEGIN_SRC python 
+import boto
+from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType, EBSBlockDeviceType
+from boto import ec2
+
+conn = ec2.connect_to_region("us-east-1")
+
+#for region: us-east-1, instance type: pvm;
+# given in 'https://raw.github.com/amplab/spark-ec2/branch-2.0/ami-list/us-east-1/pvm'
+# Amazon Linux, username: root. 
+ami_name = 'ami-5bb18832'
+image = conn.get_image(ami_name)
+
+#launch only one instance 
+#there are more kwargs to launch multiple intance, attached EBS, run a configure script, ect. 
+#need to specify aws_access_key_id and aws_secret_access_key in ~/.boto or in evironment
+# the private pem key associated with the key_name is needed to ssh into the instance later.
+# return a reservation
+res = image.run(key_name = "sgu-ec2-all",
+                instance_type = "m1.large",
+                security_groups=["launch-wizard-1"])
+
+time.sleep(20)   #wait for 20 secs 
+res = [s for s in conn.get_all_reservations() if s.id == res.id][0]
+print "ssh -i path-to-pem root@%s" % (res.instances[0].ip_address,)
+
+#+END_SRC
+* HDFS 
+** UI: 
+http://{host}:50070
+ 
+** configuration
+*** Q: What is the default config dir? 
+A: If the env /HADOOP_CONF_DIR/ is not defined, then /HADOOP_CONF_DIR/ is set to ${HADOOP_PREFIX}/conf or ${HADOOP_PREFIX}/etc/hadoop (see the logic in libexec/hadoop-config.sh
+*** Default values 
++ the default value of /dfs.data.dir/, /dfs.name.dir/ are based on /hadoop.tmp.dir/(in etc/hadoop/core-site.xml). Cf. https://hadoop.apache.org/docs/r2.7.3/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml
+** /hdfs getconfig/
+#+BEGIN_SRC shell
+hdfs getconf -confKey dfs.blocksize
+#+END_SRC
+** Debug and Monitor 
+*** /jps/
+the jdk /jps/ command list all the daemon. 
+#+BEGIN_SRC shell
+[hadoop-user@master]$ jps
+26893 Jps
+26832 TaskTracker
+26620 SecondaryNameNode
+26333 NameNode
+26484 DataNode
+26703 JobTracker
+
+#+END_SRC
+
+*** /netstat/
+#+BEGIN_SRC shell
+#-p: PID; l: listening u: TCP; e: extended info; n: numeric port 
+hduser@ubuntu:~$ sudo netstat -plten | grep java
+tcp   0  0 0.0.0.0:50070   0.0.0.0:*  LISTEN  1001  9236  2471/java
+tcp   0  0 0.0.0.0:50010   0.0.0.0:*  LISTEN  1001  9998  2628/java
+tcp   0  0 0.0.0.0:48159   0.0.0.0:*  LISTEN  1001  8496  2628/java
+tcp   0  0 0.0.0.0:53121   0.0.0.0:*  LISTEN  1001  9228  2857/java
+tcp   0  0 127.0.0.1:54310 0.0.0.0:*  LISTEN  1001  8143  2471/java
+tcp   0  0 127.0.0.1:54311 0.0.0.0:*  LISTEN  1001  9230  2857/java
+tcp   0  0 0.0.0.0:59305   0.0.0.0:*  LISTEN  1001  8141  2471/java
+tcp   0  0 0.0.0.0:50060   0.0.0.0:*  LISTEN  1001  9857  3005/java
+tcp   0  0 0.0.0.0:49900   0.0.0.0:*  LISTEN  1001  9037  2785/java
+tcp   0  0 0.0.0.0:50030   0.0.0.0:*  LISTEN  1001  9773  2857/java
+
+#+END_SRC
+** /fsck/ 
+fs checking utility 
+#+BEGIN_SRC 
+# Show the block size of a file
+# We can see more details of a block in the web UI Utilities tab 
+hdfs /test/text8_2 -files -blocks 
+#+END_SRC
+** /put/ with blocksize
+#+BEGIN_SRC 
+#specify block size 
+hadoop fs -Ddfs.blockzise -put /path/file1 /path/file2  
+#+END_SRC
