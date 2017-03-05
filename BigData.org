@@ -706,6 +706,17 @@ while not instance.update() == 'running':
     time.sleep(5)
 instance.stop()
 #+END_SRC
+* AWS-EMR
+#+BEGIN_SRC shell
+spark-submit --deploy-mode cluster --master yarn --num-executors 3 --executor-memory 5g word2vec_app.py hdfs:///test/text8_lines
+#+END_SRC
+** Q: where is the log for spark? 
+A:  The stderr, stdout is in the nodes: /mnt/var/log/hadoop-yarn/containers/application_1488651686158_0002/container_1488651686158_0002_01_000001. Note that the driver may not be the master of the emr. Actually the driver could be an different node in another /spark-submit/. It can also be accessed in UI: 
+
+** Q: how to access cluster UI? 
+A: 1. setup dynamic port forwarding ssh -N -D 8157 hadoop@54.163.208.186
+   2. Then setup proxy http://docs.aws.amazon.com//emr/latest/ManagementGuide/emr-connect-master-node-proxy.html
+
 * Setting up Spark-EC2
 
 ** dissect spark_ec2.py
@@ -820,8 +831,9 @@ fs checking utility
 # We can see more details of a block in the web UI Utilities tab 
 hdfs /test/text8_2 -files -blocks 
 #+END_SRC
-** /put/ with blocksize
+** /put/ with blocksize and dfs.replication
 #+BEGIN_SRC 
 #specify block size 
-hadoop fs -Ddfs.blockzise -put /path/file1 /path/file2  
+hadoop fs -Ddfs.blocksize=33554432  -put /path/file1 /path/file2 
+ hadoop fs -Ddfs.replication=8 -put text8_lines /test/ 
 #+END_SRC
