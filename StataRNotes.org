@@ -66,6 +66,7 @@ The default width is 80 characters. We can change it to 160 characters by
 #+END_SRC
 *** show environment 
 #+BEGIN_SRC r
+> sessionInfo() #list all package versions, locale, ect. 
 > options() #list all options
 > ls() #list all objects
 > objects() #remove objects in the workspace
@@ -147,6 +148,18 @@ R relies on a class system and mechanism for dispatching based on the class of a
 #+BEGIN_SRC R
 class(obj)  #show the class of obj 
 methods(class="Mclust")  #List all available methods for an S3 generic function, or all methods for a class.
+#+END_SRC
+** see the source a function 
+Cf. http://stackoverflow.com/questions/19226816/how-can-i-view-the-source-code-for-a-function
+#+BEGIN_SRC 
+> rv.fa <- fa(ds.a,nfactors = 2, rotate = "varimax",fm="ml", scores = "regression")
+> class(rv.fa)
+[1] "psych" "fa"
+> methods(class="psych")
+[1] anova     biplot    plot      predict   print     resid     residuals summary  
+see '?methods' for accessing help and source code
+> getAnywhere("print.psych.fa")  #this show the source 
+
 #+END_SRC
 ** Plotting
 *** simple boxplot/export
