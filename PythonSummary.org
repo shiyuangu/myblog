@@ -539,6 +539,62 @@ df = pd.DataFrame(np.ones((3,3)), index =['A','B','C'], columns=['foo_1','foo_2'
 
 
 #+END_SRC
+** groupby and apply
+Q: How to identify each group in f when using /gb.apply(f)/?
+A: the group seems to be in x.name. Note the /group_keys/ in the groupby kwars are NOT for this purpose(the doc is very confusing!). The /group_keys/ are used to indicate whether the group would become an index in the return result of /gb.apply/
+http://stackoverflow.com/questions/38856583/what-does-the-group-keys-argument-to-pandas-groupby-actually-do
+#+BEGIN_SRC python 
+In [41]: df
+Out[41]: 
+    a  b   c   d
+0   0  1   2   3
+1   4  1   6   7
+2   8  5  10  11
+3  12  5  14  15
+4  16  9  18  19
+
+In [42]: def g(x):
+    ...:     print x
+    ...:     print x.index
+    ...:     print x.name
+    ...:     print "\n"
+    ...:     return x.describe()
+    ...:     
+    ...: 
+
+In [44]: df_t = df.groupby('b',group_keys=False).apply(g)
+   a  b  c  d
+0  0  1  2  3
+1  4  1  6  7
+Int64Index([0, 1], dtype='int64')
+   a  b  c  d
+0  0  1  2  3
+1  4  1  6  7
+Int64Index([0, 1], dtype='int64')
+1
+
+
+    a  b   c   d
+2   8  5  10  11
+3  12  5  14  15
+Int64Index([2, 3], dtype='int64')
+5
+
+
+    a  b   c   d
+4  16  9  18  19
+Int64Index([4], dtype='int64')
+
+
+#+END_SRC
+
+** Pivot table
+Q: How can I pivot table and add a total to each subcategory?
+A: Use both the /index/ and /columns/ in /pd.pivot_table/; and then use /stack/
+#+BEGIN_SRC python 
+pd.pivot_table(df,values="Duration",index=["Category"],columns=["SubCategory"],aggfunc="sum",margins=True).stack("SubCategory")
+
+#+END_SRC
 ** Insert/delete rows/columns
 df.append(dict-like) # no check for new key; so spelling error would create a new column ; also not in place. 
 df['newcol'] = series 
@@ -592,6 +648,7 @@ from dateutil.relativedelta import relativedelta
 
 #+END_SRC
 ** Gotcha
+*** groupby.apply(f) might apply f twice to the first group
 *** Never specify the dtype when reading in data. Instead, first read in, then convert http://stackoverflow.com/questions/15210962/specifying-dtype-with-pandas-read-csv
 #+BEGIN_SRC python
 # dont' use dtype converters explicity for the columns you care about

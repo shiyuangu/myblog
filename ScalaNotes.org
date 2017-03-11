@@ -184,7 +184,7 @@ http://docs.scala-lang.org/tutorials/FAQ/collections
 def isPrime(n:Int):Boolean =  (2 until n) forall (d => n %d !=0)
  def isPrime(n:Int):Boolean =  (2 until n) forall (_%d !=0 )
 
-#Q: what happen when we call map on a Range. The result is no longer a Range? 
+#Q: what happen when we call map on a Range when the result is no longer a Range? 
 #A: The follow generate a vector pairs; the type inference figures that /Range/ is a /IndexedSeq/ and the default implementation of /IndexedSeq/ is /Vector/
 (1 until 10) map (i=>(1 until i) map (j => (i,j)))
 
