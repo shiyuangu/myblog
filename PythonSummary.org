@@ -344,6 +344,17 @@ m=re.search('(\d+?)',"abc_2004-Q1.csv")
 m.group(1) #2
 #+END_SRC 
 
+** Loop multiple files of a pattern 
+#+BEGIN_SRC python 
+tempFile = NamedTemporaryFile(delete=True)
+tempFile.close()
+sc.parallelize(range(10)).saveAsTextFile(tempFile.name)
+from fileinput import input
+from glob import glob
+#fileinput.input() takes a list of filenames and return an iterator so that all filenames are just seems to be one
+''.join(sorted(input(glob(tempFile.name + "/part-0000*"))))  
+'0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n'
+#+END_SRC
 * Performance Tricks 
 ** dict
 + Use /dict.intervalues()/ instead of /dict.values()/ if we only need to extract the first values
