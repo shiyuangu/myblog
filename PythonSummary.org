@@ -355,6 +355,62 @@ from glob import glob
 ''.join(sorted(input(glob(tempFile.name + "/part-0000*"))))  
 '0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n'
 #+END_SRC
+* Unicode Encoding 
+https://docs.python.org/2/howto/unicode.html
+Cf. Item 3: Know the Difference Between /bytes/, /str/, and /unicode/
+python2 use the class Unicode for /unicode/ string and /str/ for raw 8 bit. In python 3, /str/ is for unicode and /bytes' for raw 8 bit. Unicode to raw bits are code /encode/ while raw bits to unicode is called /decode/. In Python 2, unicode.encode(..) method return a /str/ while /str/ to unicode is called /decode/.
+** Q: bits order
+ Unicode character U+FEEF is used as byte-order mark(BOM) and is often written as the first character of a file in order to assist with autodectection of the file's byte ordering. Some encodings, such as UTF-16 expect a BOM to be present at the start of a file and drop BOM silently when the file is read while other encoding such as "utf-16-le" and "utf-16-be" for little endian and big-endian encodings won't drop BOM(since the order is already specified in the encoding scheme)
+** Unicode filename 
+Different OS uses different approach(in Linux, it's the LANG or LC_TYPE environment variables). Python /open/ method(or /codec.open/ for more advanced use),/os.listdir()/ automatically handle the unicode name, 
+#+BEGIN_SRC python 
+filename = u'filename\u4500abc'
+f = open(filename, 'w')
+f.write('blah\n')
+f.close()
+#+END_SRC
+ 
+** Gotcha 
+*** Q: File is read by trunk, how do you make sure no partial read 
+A: Cf. codec.open()
+*** Q: unicode + str(raw 8 bit) might be an error(not always error)
+#+BEGIN_SRC python 
+In [110]: s
+Out[110]: u'abc'
+
+In [111]: t
+Out[111]: '\xc3'
+
+In [121]: s+t
+---------------------------------------------------------------------------
+UnicodeDecodeError                        Traceback (most recent call last)
+/home/sgu/centene/centene/test_geocode.py in <module>()
+----> 1 s+t
+
+UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 0: ordinal not in range(128)
+
+In [122]: "%s, %s" % (s,t)
+---------------------------------------------------------------------------
+UnicodeDecodeError                        Traceback (most recent call last)
+/home/sgu/centene/centene/test_geocode.py in <module>()
+----> 1 "%s, %s" % (s,t)
+
+UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 0: ordinal not in range(128)
+
+#However, s+s, t+t, "%s,%s" % (s,s) and "%s,%s" % (t,t)  all works. Only Mixing of s and t will error.  
+
+#+END_SRC
+
+*** Security hole 
+The following snippet has a security problem. If an attacker could specify the 'base64' encoding, they could pass 'L2V0Yy9wYXNzd2Q=', which is the base-64 encoded form of the string '/etc/passwd', to read a system file. The above code looks for '/' characters in the encoded form and misses the dangerous character in the resulting decoded form.
+#+BEGIN_SRC python 
+def read_file (filename, encoding):
+    if '/' in filename:
+        raise ValueError("'/' not allowed in filenames")
+    unicode_name = filename.decode(encoding)
+    f = open(unicode_name, 'r')
+    # ... return contents of file ...
+#+END_SRC
 * Performance Tricks 
 ** dict
 + Use /dict.intervalues()/ instead of /dict.values()/ if we only need to extract the first values
