@@ -77,6 +77,13 @@ conf = __import__('config').configs  #config is a variable defind on the top lev
  #+END_SRC
 
 ** The use of "@property": Uniform Access Principle. 
+** Scoping Rules, Static variables(class attributes). 
+Python Essential reference: Although classes define a namespace, classes do not create a scope for a names used inside the bodies of methods, therefore, when you are implementing a class, referenes to attributes and methods must be fully qualified. This lack of scoping in classes is one area where Python differs from C++ or Java. The explicit use of self is required, because without it, python doesn't provide a means to declare a variable. Without /self/, there is no way to know whether an assignment to a variable in a method is supposed to be a local variable or if it's supposed to be  saved as an instance variable. Internally, python relies on dictionary and lookup rules to resolve names: 
+Cf: http://stackoverflow.com/questions/68645/static-class-variables-in-python
+https://jeffknupp.com/blog/2013/02/14/drastically-improve-your-python-understanding-pythons-execution-model/
+https://blog.ionelmc.ro/2015/02/09/understanding-python-metaclasses/
+
+
 * Type conversion
   Speicial Methods __int__(), __float__() ect. are called by explicit conversion such as int(x), float(x), but never called implicitly to perform type conversion during mix-type arithmetic. 
 
@@ -266,7 +273,8 @@ def f1():
  
   #+END_SRC
 
-+ Local variable may shadow global 
++ Local variable may shadow global
+Python Essential reference: Although classes define a namespace, classes do not create a scope for a names used inside the bodies of methods, therefore, when you are implementing a class, referenes to attributes and methods must be fully qualified. This lack of scoping in classes is one area where Python differs from C++ or Java. The explicit use of self is required, because without it, python doesn't provide a means to declare a variable. Without /self/, there is no way to know whether an assignment to a variable in a method is supposed to be a local variable or if it's supposed to be  saved as an instance variable.  
 #+BEGIN_SRC python
 x = 100
 print "1. Global x:", x
@@ -285,6 +293,10 @@ class Test(object):
         except NameError, e:
             print "6.", e
 
+    @staticmethod
+    def static_method():
+        print "9.Still the global variable x:", x 
+        #print "Static Variable y:",y #this is error, global name y is not defined
     def method_local_ref(self):
         #print x
         try:
@@ -296,7 +308,28 @@ class Test(object):
 
 obj = Test()
 obj.method()
+Test.static_method()
 obj.method_local_ref()
+
+#Note that class attributes and instance attributes are kept in the dictionary, we have to use obj.a or class.a to access.
+
+In [1]: Test.__dict__
+Out[1]: 
+dict_proxy({'__dict__': <attribute '__dict__' of 'Test' objects>,
+            '__doc__': None,
+            '__module__': '__main__',
+            '__weakref__': <attribute '__weakref__' of 'Test' objects>,
+            'method': <function __main__.method>,
+            'method_local_ref': <function __main__.method_local_ref>,
+            'static_method': <staticmethod at 0x7effed27c520>,
+            'x': 101,
+            'y': 100,
+            'z': 101})
+
+In [2]: obj.__dict__
+Out[2]: {}
+
+
 #+END_SRC
 
 + Python is lexical scooping: 
