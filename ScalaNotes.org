@@ -11,6 +11,8 @@
 is equivalent to 
 /(Int => Int) => ((Int,Int)=>(Int))/
 + Method or any /def/ is not a function, but when it's used in place of a function type is expected, it is replace by /(x:Int) => f(x)/ which is a function oject (i.e., /eta-expansion/).
++ Functions are objects
+A /function/ is a set of traits which define the apply() syntactic sugar. Recall when we call an obj, like obj(), scala use the apply() method of the obj. The syntactic sugar of apply helps unify the duality of object and functional programming. You can pass classes around and use them as functions and functions are just instances of classes under the covers. Does this mean that every time you define a method in your class, you’re actually getting an instance of Function*? No, methods in classes are methods. Methods defined standalone in the repl are Function* instances.(Cf. https://twitter.github.io/scala_school/basics2.html) 
 
 *** call-by-name vs call-by-value 
 #+BEGIN_SRC java
@@ -74,7 +76,7 @@ def surface = height * weight
 
 #+END_SRC
 *** Constructor
-Not /val/ are special, they can override method or implement abstract method in trait. 
+Note /val/ are special, they can override method or implement abstract method in trait. 
 #+BEGIN_SRC 
 trait List[T]{
   def isEmpty: Boolean
@@ -85,10 +87,19 @@ class Cons[T](val head:T, val tail: list[T]) extends List[T]{
   def isEmpty = false
 }
 #+END_SRC
-** Nothing  
+** Nothing and Option 
 /Nothing/ is a subtype of every other type. There is no value of type /Nothing/. It is used to signal abnormal termination(/throw exc/). Note that /void/ in Java is /Unit/ which is different than /Nothing/
+
 #+BEGIN_SRC java
 def error(msg:String) = throw new Error(msg)  //(msg:String)Nothing
+#+END_SRC
+
+Note that there is no /null/ in Scala. In Java, /null/ signals empty(for example, access a non-existence key in HashMap). In Java /null/ is of null type and  can be cast to any reference type, but not to any primitive type like int or boolean.  This approach in Java is actually error-prone: 1). how to keep track when a variable is allowed to be /null/. Scala uses Option to handle this case so that the code is self-explained when a variable is allowed to be null. Pattern matching is often used to take the option values apart. 
+#+BEGIN_SRC scala
+def show(x:Option[String]) = x match {
+   case Some(s) => s
+   case Nothing => "?"
+}
 #+END_SRC
 
 
@@ -96,6 +107,54 @@ def error(msg:String) = throw new Error(msg)  //(msg:String)Nothing
 + Scala compiler can usually deduce the correct type parameters from the value arguments of a function call
 + We can assume that all type parameters and type arguments are removed before evaluating the program. (/type erasure/). Java and scala are /type erasure/ but not C++(which keep type parameters at run time).
 + /object/(/Singleton/) cannot have a type parameter
++ Type parameter constraints(Cf. Manning Scala in Depth, 2012)
+#+BEGIN_SRC scala
+//A below is called type parameters
+scala> def randomElement[A](x:Seq[A]):A = x.head
+randomElement: [A](x: Seq[A])A
+
+//The type parameter can be passed in just like other normal parameters. We can use to enforce type-safe.   
+scala> randomElement[String](List("1","2","3"))
+res0: String = 1
+
+scala> randomElement[Int](List("1","2","3"))
+<console>:9: error: type mismatch;
+ found   : String("1")
+ required: Int
+              randomElement[Int](List("1","2","3"))
+
+// we can also ignore the type parameter when calling the function in which case scala infers the type. 
+scala> randomElement(List("1","2","3"))
+res1: String = 1
+
+// However type parameters CANNOT be ignore when defining the functions. 
+scala> def randomElement(x:Seq[A]):A = x.head
+<console>:7: error: not found: type A
+       def randomElement(x:Seq[A]):A = x.head
+
+#+END_SRC
+
+** Higher-kinded type 
+#+BEGIN_SRC scala
+type Callback[T] = Function1[T,Unit]
+scala> type Callback[T] = Function1[T,Unit]
+defined type alias Callback
+
+scala> def foo[M[_]](f:M[Int]) = f
+warning: there were 1 feature warning(s); re-run with -feature for details
+foo: [M[_]](f: M[Int])M[Int]
+
+scala> val x: Callback[Int] = y => println(y+2)
+x: Int => Unit = <function1>
+
+scala> foo(x)
+res1: Int => Unit = <function1>
+
+scala> foo[Callback](x)
+res2: Int => Unit = <function1>
+
+#+END_SRC
+
 ** Type Bounds
 #+BEGIN_SRC scala
 def assertAllPos[S >:NonEmpty <: IntSet](r:S): S = 
@@ -150,7 +209,8 @@ msort(nums)((x,y) => x<y) //Scala will analyze at msort() and nums and infer the
 
 #+END_SRC
 
-** Pattern Matching 
+** Case Classes and Pattern Matching
+ 
 #+BEGIN_SRC scala
 def isort(xs:List[Int]):List[Int] = xs match { 
 case List() => List()
@@ -159,7 +219,7 @@ case y::ys => insert(y,isort(ys))  //y match the head and ys matches the tail
 
 
 def scalarProduct(xs:Vector[Double],ys:Vector[Double]):Double = 
-(xs zip ys).map{case (x,y) => x*y}.sum
+(xs zip ys).map{case (x,y) => x*y}.sum //tuple patterns 
 //In general, {case p1 =>e1.. case pn=>en} is a short hand for 
 //x match {p1=>e1..case pn=>en) 
 #+END_SRC
@@ -289,6 +349,18 @@ a: AnyVal = 1
 What a is /AnyVal/ not int? 
 #+END_SRC 
 
++ fold vs. foldLeft vs. aggregate 
+def fold(z:A)(f:(A,A) => A): A
+def foldleft[B](z:B) (f: (B,A) => B): B 
+/z/ is the initial value to start the operations. Note that foldLeft allows different type but it doesn't parallelizable. To see why, consider the following examples. When we split the list into List(1,2) and List(3,4) and apply the operation to each these sublist, we get two str which cannot be combine since the combination operation requires one of them to be Int.
+
+To handle the parallelization but also allow different type, scala collection also provide aggregate
+def aggregate[B](z: =>B)(seqop: (B,A) => B, combop: (B,B) => B): B 
+seqop is applied to each sub-collection while combop is used to combine the result from sub-collections.  
+#+BEGIN_SRC scala
+val xs = List(1,2,3,4)
+val res = xs.foldLeft("")((str:String, i:Int) => str + i)
+#+END_SRC
 
 + What the maximize recursive depth for scala; 
 A: dependents on JVA for maximum stack size ('-Xss' argument), it's typical set to ('-Xss4m') for scala. 

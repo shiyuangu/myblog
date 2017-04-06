@@ -1,14 +1,36 @@
 * Spark
 
-** RDD: 
-+ Action vs. Transformation 
-+ Persistence, Storage level: 
-Where(memory or disk) and how to persist(serialized or unserialized) 
-each time we call a new action, the entire RDD must be computed "from scratch". To avoid this inefficiency, users can /persist/ immediate results. 
-*** Transformations
-Elementwise and pseduo-set 
+** RDD:
+*** RDD looks like Scala parallel collections but with added info for distributed computation. 
+*** Action vs. Transformation
++ Transformation returns RDD, is *lazy* (vs. /transformer/ in scala)
++ Compute a result based on an RDD, either returned or saved to an external storage system(eg. HDFS). Action is *eager*
++ To determine whether a function is a transformation or an action, we can look at the return type. A transformation always return another RDD while action always return non-RDD. 
++ Laziness/eagerness is how we can limit network communicating using the programming model 
+#+BEGIN_SRC scala
+val people: RDD[Person] = ...
+people.foreach(println) 
+#On the driver: Noting happens. Why? RDD.foreach is an action. It prints to stdout of the executors but println return Unit.
+#+END_SRC
 
-*** Actions
+**** Transformations 
++ Common transformations (note that all return RDD) 
+//scala has similar such operations
+map[B](f: A=>B): RDD[B]
+flatMap[B](f: A=> TraversableOnce[B]): RDD[B]
+filter(pred: A=>Boolean): RDD[A]
+distinct(): RDD[B]
+
+
+//set operations
+union(other: RDD[T]): RDD[T]
+intersection(other:RDD[T]): RDD[T]
+subtract(other:RDD[T]): RDD[T]
+cartesian[U](other: RDD[U]): RDD[(T,U)]
+
+
+**** Actions
+
 + /reduce()/, /fold()/
   return type has to be the element type of RDD
 + /aggregate()/
@@ -21,6 +43,56 @@ Practical difference between these methods in Spark is only related to their beh
 http://stackoverflow.com/questions/36056895/reduce-vs-fold-in-apache-spark
 http://stackoverflow.com/questions/34529953/why-is-the-fold-action-necessary-in-spark
 
++ Common Actions(note that actions always return Non-RDD)
+collect(): Array[T]
+count(): Long
+take(num:Int): Array[T]
+reduce(op:(A,A) => A): A
+foreach(f: T=>Unit): Unit 
+
+//the following actions have no analogue in scala collections but are specific to Spark when dealing with distributed data. 
+takeSample(withRepl: Boolean, sum:Int):Array[T]
+takeOrdered(num: Int)(implicit ord: Ordering[T]): Array[T]: return the first n elements of the RDD using either their natural order ir a custom comparator(?)
+saveAsTextFile(path:String): Unit 
+saveAsSequenceFile(path:String): Unit (write to Hadoop SequenceFile)
+
++ Different from Spark 
+Spark doesn't allows foldLeft/foldRight like regular scala collection. Recall foldLeft and foldRight are not parallelizable. Use aggregation instead.  
+
+**** Performance Implication 
+Laziness/eagerness of transformation/action allows Spark to optimize the *chain of operations* before executing it. In the following example, Spark see the action is take(10) and will stop filtering once there are ten records. 
+#+BEGIN_SRC scala
+val lastYearsLogs RDD[String] = 
+val firstLogsWithErrors = lastYearsLogs.filter(_.contains("ERROR")).take(10)
+#+END_SRC
+
+Spark can also fuse multiple transformation into one which is very different than Scala collection. In the following example, spark fuse map and filter so that it only need traverse the dataset one 
+#+BEGIN_SRC scala
+val lastYearsLogs: RDD[String] = 
+val numErros = lastYearsLogs.map(_.lowercase).filter(_.contains("error")).count()
+
+#+END_SRC
+
+*** Persistence, Storage level(This is very unlike Scala Collections) 
+Spark allows user to specify Where(memory or disk) and how to persist(serialized or unserialized) 
+By default, each time we call a new action, the entire RDD must be computed "from scratch". To avoid this inefficiency, users can /persist/ immediate results.  Note that the use of /persist()/ in line a. Without it, the map in line a are evaluated each time an action is called(in this case, it's called numIterations time)  
+#+BEGIN_SRC scala
+val points = sc.textFile(...).map(parsePoint).persist() //a
+val w = Vector.zeros(d)
+for (i<- 1 to numIterations){
+   val gradient = points.map { p=> (1/(1+exp(-p.y*w.dot(p.x)))-1) * p.y * p.y}.reduce(_+_)
+w -= alpha * gradient 
+}
+#+END_SRC
+
+Storage level: 
+a). MEMORY_ONLY: in memory as regular Java objects
+b). DISK_ONLY: on disk as regular Java objects
+c). MEMORY_ONLY_SER: in memory as serialized Java objects(more compact)
+d). MEMORY_AND_DISK 
+e). MEMORY_AND_DISK_SER:Both in memory and on disk(spill over to disk to avoid re-computation). Note that a) doesn't spill to disk, it simply re-computes when the memory cannot hold the object anymore. 
+
+Persist() vs. cache(): Persist takes a)- e) while cache() is a shorthand for default which is a). 
  
 *** Specialized RDD: DoubleRDDFunctions, PairRDDFunction
 + More functions are available for JavaDoubleRDD. We can use /rdd.mapToDouble(..)/ to get a JavaDoubleRDD so that /mean()/,/variance()/ is available.  
@@ -39,8 +111,31 @@ tokenized.map(lambda l: (l[0],1)).reduceByKey(lambda a,b: a+b).reduce(lambda x,y
 #+END_SRC
  
 **** PairRDD
+***** groupByKey
+Spark: def groupByKey(): RDD[(K,Iterable[V])]
+vs. 
+Scala Collection: def groupBy[K](f: A=>K): Map[K, Traversable[A]]
+
+Note that groupByKey() in Spark returns another RDD hence, groupByKey() is a transformation.
+***** reduceByKey
+def reduceByKey(f: (V,V) =>V): RDD[(K,V)]
+reduceByKey could be more efficient than groupByKey since it reduces the amount of data requiring shuffle. 
+***** mapValues 
+def mapValues[U](f: V=>U): RDD[(K,U)]
+
+***** countByKey
+def countByKey():Map[K,Long]
+Note that Map is a normal Scala Map and hence countByKey() is an action. 
+
+***** Joins 
+def join[W](other: RDD[(K,W)]): RDD[(K,(V,W))] //inner join 
+
+//Note the use of Option to handle the case a key is missing in one RDD. 
+def leftOuterJoin[W](other: RDD[(K,W)]): RDD[(K,(V,Option[W]))] 
+def rightOuterJoin[W](other:RDD[(K,W}]): RDD[(K,(Option[V],W))] 
+
 ***** Q: can the tuple be three tuple? 
-A: No, only one value seems to be recognized by /mapValues/
+A: No, only one value seems to be recognized by /mapValues/. Solution group all values into a tuple. 
 #+BEGIN_SRC  python
 In [9]: rdd_a.collect()
 Out[9]: [('a', 1, 2), ('a', 2, 3), ('b', 4, 5)]
@@ -79,21 +174,61 @@ Out[28]: [('a', (2, 5)), ('a', (2, 6)), ('a', (3, 5)), ('a', (3, 6)), ('b', (4, 
 
 
 *** Partitioner 
+Two kinds of partitioning available in Spark: Hash partitioning and Range partitioning. Both are only available for Key-value RDD, i.e, customer partitioning is only possible for key-value RDD.  
+**** Customer Partitioner 
+#+BEGIN_SRC scala 
+val pairs = purchasesRDD.map(p => (p.customerId, p.price))//pairs now is a key-value RDD
+val tunedPartitioner = new RangePartitioner(8, pairs) //note that RangePartitioner needs to sample the data so that it knows the range. 
+val partitioned = pairs.partitionBy(tunedPartitioner).persist()//note the use of persist which avoids partitioning the data again and again. In fact, partitionBy should be always follow a persist.  
+
+
+#+END_SRC
+
 **** Q: What's the default partitioner? 
 A: Depends on the number of executor and the number of cores of the executors. Cf. http://stackoverflow.com/questions/24877970/defaultminpartitions-in-textfile. The default number of partition depends on the the input format, for HDFS, it's 64MB per partition. There is a discussion for how many partition should be the default for textFile. https://github.com/mesos/spark/pull/718
 
 **** Q: for binary operation(eg., /rdd_a.join(rdd_b)/), which partitionar is set on the output? 
-A: If both /rdd_a/ and /rdd_b/ has partitioner set, it will be /rdd_a/'s partitioner; If only one of /rdd_a/ and /rdd_b/ has partitioner set, it will be that partitioner. Otherwise, it will be the a hash partitioner by default, with the number of partitions set to the level of parallelism of the operation. 
-*** Shuffle
+A: If both /rdd_a/ and /rdd_b/ has partitioner set, it will be /rdd_a/'s partitioner; If only one of /rdd_a/ and /rdd_b/ has partitioner set, it will be that partitioner. Otherwise, it will be the a hash partitioner by default, with the number of partitions set to the level of parallelism of the operation(total number of cores in all executors). The rationale to try to stick to parent's partitioner is that the user can specify the partitioner for the rdd which the user know it would be expensive to shuffle.  
 
-+ Q: When does "Shuffle" happen? 
+**** Q: what is the partitioner of an RDD which is generated by an transformation from another RDD. 
+A: Some operation on PairRDD that hold to (and propagate) a partitioner: 
+cogroup, groupWith, join, leftOuterJoin, rightOuterJoin, groupByKey and reduceByKey, foldByKey, combineByKey, partitionBy, sort, mapValues(if parent has a partitioner), flatMapValues(if parent has a partitioner), filter(if parent has a partitioner. 
+Some operation loses parent's partitioner: map, flatMap which is because map, flatMap might change the key. 
+There are also operations which automatically reset paritioner. For example, by default, when using sortByKey, a RangePartitioner is used. the default partitioner when using groupByKey is a HashPartitioner.
+
+#+BEGIN_SRC scala
+val purchasedPerCust = purchasesRdd.map(p=>(p.customerId,p.price)).groupByKey() #this create a hash-partitioned RDD. 
+
+#+END_SRC
+
+*** Shuffle
+**** Q: How do I know whether a shuffle will happen
++ Look at the return type of certain transformation, eg., 
+org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[366]
+
++ Use function toDebugString to see its execution plan: 
+partitioned.reducedByKey((v1,v2) => (v1._1 + v2._1, v1._2 + v2._2).toDebugString 
+
+**** Q: When does "Shuffle" happen? 
 A: Transformation may involve shuffling. Shuffle only happen when action occurs. 
 
-+ For wide dependencies(i.e, Shuffle), spark currently materialize intermediate records on the nodes holding parent partitions to simplify fault recovery, much like MapReduce materializes map outputs. (Cf. Spark White paper). The option /spark.shuffle.memoryFration/ controls the total amount of memory used in shuffle-related buffers. 
+**** Intermediate shuffling results are materialized. 
+Recall that reconstruct the lost partition is fast for narrow dependencies but slow for wide dependencies. For wide dependencies(i.e, Shuffle), spark currently materialize intermediate records on the nodes holding parent partitions to simplify fault recovery, much like MapReduce materializes map outputs. (Cf. Spark White paper). The option /spark.shuffle.memoryFration/ controls the total amount of memory used in shuffle-related buffers. 
 
  
+**** Narrow Dependencies and Wide Dependencies 
+Not all transformations are created equal. Some transformation is more expensive than others. 
+Narrow Dependency: each partition of the parent RDD is used by at most one partition of the child RDD(eg. map, filter, union, join with co-partitioned input). 
+**** How do we know what other RDDs an RDD depends on? 
+Use dependencies method 
+#+BEGIN_SRC scala
+val wordsRdd = sc.parallelize(largeList) 
+val paris = wordsRdd.map(c => (c,1)).groupByKey().dependencies 
 
+#+END_SRC
 
+** Hadoop vs. Spark 
+Hadoop relies on IO to connect iterations while Spark tries to do in-memory computation. 
 ** Programming Framework 
 http://spark.apache.org/docs/latest/programming-guide.html
 Cf. Learning Spark 
@@ -143,6 +278,22 @@ Note that spark-ec2 install two HDFS: ephemeral-hdfs and persistent-hdfs. By def
 #+END_SRC
  
 * Spark SQL
+** Motivation 
+Structure information enables optimization. Think about a query involves both filter and join. Operation order matters. Is it cool that Spark can automatically figure the right order. 
+It's common to have filter and join. 
+Three main goals of Spark SQL: 
+1. Support relational processing both with Spark programs(on RDD) and on external data sources with friendly API
+2. High performance 
+3. Easily suport new data sources with semi-structured data and external databases. 
+** Structured vs. Unstructured 
+Structure: has a rigid schema, eg. SQL table. 
+Semi-structure: has a schema but not as rigid, eg. json, xml 
+unstructure: log files, images.
+** DataFrame 
+1. An relational API over RDD: for convenience. Note that Dataframe has its own API too. 
+2. Able to be automatically optimized. 
+3. Untyped: The elements within DataFrames are Rows, which are not parameterized by a type. Therefore, the scala complier cannot type check Spark SQL schemas in DataFrames. 
+ 
 ** RDD vs. Dataset vs. DataFrame
 http://spark.apache.org/docs/latest/sql-programming-guide.html#datasets-and-dataframes
 DataFrame are RDD of Row 
@@ -156,6 +307,9 @@ Out[16]:
 [Row(id=0, words=[u'a', u'b', u'c']),
  Row(id=1, words=[u'a', u'b', u'b', u'c', u'a'])]
 #+END_SRC
+
+** Q: What literals(statements) are available in Spark SQL. 
+A: Largely what's available in HiveSQL.  
 
 **  Dataframe vs. Pandas dataframe
 http://www.kdnuggets.com/2016/01/python-data-science-pandas-spark-dataframe-differences.html
