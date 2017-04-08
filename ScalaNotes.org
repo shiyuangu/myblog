@@ -378,3 +378,16 @@ http://stackoverflow.com/questions/6591452/how-to-increase-scala-stack-size
 http://stackoverflow.com/questions/3700459/how-to-increase-the-java-stack-size
 
  
+* Parallel Programming
+** Parallel Programming vs. Concurrent Programming
+Parallel Programming: 
++ focus more on algorithm perspective: how to divide up the computation?
++ Scientific computing  
+
+Concurrent Programming
++ focus more on system design perspective: how to share and exchange info between multiple executions. Improve modularity, responsive or maintainability. 
++ Web service, database 
+
+** Processes vs. Threads 
++ Processes have different memory spaces, one cannot access the other. Inter-process communication is not easy (possible, eg. pipes) 
++ Threads share the same memory address space(heap). However, each thread has a program counter and a program stack. One thread cannot modify the other's stack. For example, JVM threads can share heap but not stack.  
