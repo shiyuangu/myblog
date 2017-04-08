@@ -1,4 +1,6 @@
 * Spark
+** Motivation 
+MapReduce relies on disk to back up data for fault tolerance. Spark takes the view of functional programming, dataset is just a series of functional transformation from one to another. Spark keeps track of the operations for fault tolerance. 
 
 ** RDD:
 *** RDD looks like Scala parallel collections but with added info for distributed computation. 
@@ -267,7 +269,11 @@ d). MEMORY_AND_DISK
 e). MEMORY_AND_DISK_SER:Both in memory and on disk(spill over to disk to avoid re-computation). Note that a) doesn't spill to disk, it simply re-computes when the memory cannot hold the object anymore. 
 
 Persist() vs. cache(): Persist takes a)- e) while cache() is a shorthand for default which is a). 
- 
+**** Serialized vs. Not-serialized?
+Cache serialized objects instead of raw java object (use /MEMORY_ONLY_SER/,/MEMORY_AND_DISK_SER/). Caching serialized objects will slightly slow down the cache operation due to the cost of serialization. But it can substantially reduce the time spent on garbage collection in the JVM, since many individual records can be stored as a single giant serialized buffer. The is because the cost of GC scales with the number of objects on the heap, not the number of bytes of the data. We can find the  GC time in the application UI (driver-node:4040).
+
+
+
 
 ** Hadoop vs. Spark 
 Hadoop relies on IO to connect iterations while Spark tries to do in-memory computation. 
@@ -1085,6 +1091,7 @@ Q: what is tachyon?
 4.  deploy other user files (parameter /deploy_root_dir/) to master
 5. run /setup_spark_cluster/, which run spark-ec2/setup.sh which fills in the package config files under /spark-ec2/templates/ and write the conf to each individual package. Note eventually after a package is setup, part of the package is from other site(eg. S3) and part of it is from the /templates/ directory.  
  
+
 
 
 ** A simple Version

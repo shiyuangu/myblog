@@ -5,6 +5,9 @@
 + Q:What does  "Type" refer to in scalar? 
   A: Cannot find the definition. But from Coursera video. Looks like it's used loosely, "Type and Value" ~ "Class and Object". /Function/ which implement a /trait/ is referred to /Type/, /Option/ which implement a /trait/ is referred to /Type/, "Primitive Type" ect. 
 
+** def vs. val 
+there is actually a third option called `lazy eval` which defines first time it's invoked.http://stackoverflow.com/questions/18887264/what-is-the-difference-between-def-and-val-to-define-a-function
+
 ** Functions: 
 + Function types associate to the right, that is 
 /(Int => Int) => (Int,Int)=>(Int)/
@@ -133,6 +136,8 @@ scala> def randomElement(x:Seq[A]):A = x.head
        def randomElement(x:Seq[A]):A = x.head
 
 #+END_SRC
+*** Type Erasure 
+We can assume that all type parameters and type arguments are removed before evaluating the program. (/type erasure/)asure/. Java and scala are /type erasure/ but not C++(which keep type parameters at run time)
 
 ** Higher-kinded type 
 #+BEGIN_SRC scala
