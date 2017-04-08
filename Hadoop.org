@@ -1,0 +1,162 @@
+* HDFS 
+** UI: 
+http://{host}:50070
+ 
+** configuration
+*** Q: What is the default config dir? 
+A: If the env /HADOOP_CONF_DIR/ is not defined, then /HADOOP_CONF_DIR/ is set to ${HADOOP_PREFIX}/conf or ${HADOOP_PREFIX}/etc/hadoop (see the logic in libexec/hadoop-config.sh
+*** Default values 
++ the default value of /dfs.data.dir/, /dfs.name.dir/ are based on /hadoop.tmp.dir/(in etc/hadoop/core-site.xml). Cf. https://hadoop.apache.org/docs/r2.7.3/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml
+** /hdfs getconfig/
+#+BEGIN_SRC shell
+hdfs getconf -confKey dfs.blocksize
+#+END_SRC
+** Debug and Monitor 
+*** /jps/
+the jdk /jps/ command list all the daemon. 
+#+BEGIN_SRC shell
+[hadoop-user@master]$ jps
+26893 Jps
+26832 TaskTracker
+26620 SecondaryNameNode
+26333 NameNode
+26484 DataNode
+26703 JobTracker
+
+#+END_SRC
+
+*** /netstat/
+#+BEGIN_SRC shell
+#-p: PID; l: listening u: TCP; e: extended info; n: numeric port 
+hduser@ubuntu:~$ sudo netstat -plten | grep java
+tcp   0  0 0.0.0.0:50070   0.0.0.0:*  LISTEN  1001  9236  2471/java
+tcp   0  0 0.0.0.0:50010   0.0.0.0:*  LISTEN  1001  9998  2628/java
+tcp   0  0 0.0.0.0:48159   0.0.0.0:*  LISTEN  1001  8496  2628/java
+tcp   0  0 0.0.0.0:53121   0.0.0.0:*  LISTEN  1001  9228  2857/java
+tcp   0  0 127.0.0.1:54310 0.0.0.0:*  LISTEN  1001  8143  2471/java
+tcp   0  0 127.0.0.1:54311 0.0.0.0:*  LISTEN  1001  9230  2857/java
+tcp   0  0 0.0.0.0:59305   0.0.0.0:*  LISTEN  1001  8141  2471/java
+tcp   0  0 0.0.0.0:50060   0.0.0.0:*  LISTEN  1001  9857  3005/java
+tcp   0  0 0.0.0.0:49900   0.0.0.0:*  LISTEN  1001  9037  2785/java
+tcp   0  0 0.0.0.0:50030   0.0.0.0:*  LISTEN  1001  9773  2857/java
+
+#+END_SRC
+** /fsck/ 
+fs checking utility 
+#+BEGIN_SRC 
+# Show the block size of a file
+# We can see more details of a block in the web UI Utilities tab 
+hdfs /test/text8_2 -files -blocks 
+#+END_SRC
+** /put/ with blocksize and dfs.replication
+#+BEGIN_SRC 
+#specify block size 
+hadoop fs -Ddfs.blocksize=33554432  -put /path/file1 /path/file2 
+ hadoop fs -Ddfs.replication=8 -put text8_lines /test/ 
+#+END_SRC
+* AWS-EC2
+** Boto Script 
+#+BEGIN_SRC python 
+import boto.ec2
+conn = boto.ec2.connect_to_region("us-east-1")
+#conn.get_all_security_groups()[1].id #u'sg-7ea8bf1a'
+reservation = conn.run_instances("ami-d05e75b8",key_name = "sgu-ec2-all", instance_type = "t2.micro", security_groups=["launch-wizard-1"]) #aws_access_key is in ~/.boto or set in env or pass in directly
+reservations = conn.get_all_reservations()
+inst = reservations[0].instances[0] #get the instance, inst? show all attribute, include the ip_address, type, ect. 
+statuses = conn.get_all_instance_status()
+#make sure instance is available
+conn.terminate_instances(instance_ids = [inst.id])
+#+END_SRC 
+** system_status check vs. instance_status check 
+system_status is for the underlying EC2 system that are used by each individual  instance. System status problem requires AWS involvement to repair. Instance status is for individual instances. The customer can fix instance status problems.  
+** Q: EBS device mapping? instance_profile? initiliazation script(user-data)
+** Q: how to use VPC
+After 2013/12, each account comes with a default VPC which has a default subnet in each availability zone. If we don't specify a subnet when launching an intance, the instance is launch into the default VPC and default subnet.  We can then create a *security group* to manage the network traffic. 
+http://docs.aws.amazon.com/cli/latest/reference/ec2/authorize-security-group-ingress.html
+http://stackoverflow.com/questions/24232849/source-security-group-isnt-working-as-expected-in-aws
+https://aws.amazon.com/vpc/
+
+** Q: How to run a script after the instance starts?
+Use the user-data kwarg in /image.run(..)/
+http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html
+https://imiloainf.wordpress.com/2012/01/04/use-boto-run-user-data-in-aws-instance/
+#+BEGIN_SRC python
+import boto
+from boto.ec2.connection import EC2Connection
+import time
+ 
+ami_id = '----'                                                  # ami-ubuntu-64 (settedup) use t1.micro as instance type
+key_pair_name = '----'
+AWS_ACCESS_KEY_ID = '----'
+AWS_SECRET_ACCESS_KEY = '----'
+ 
+ec2conn = EC2Connection(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+ 
+test_script_00 = """#!/bin/bash
+sudo apt-get update
+sudo apt-get install imagemagick
+"""
+ 
+test_script_01 = """#!/usr/bin/env python
+ import boto
+ from boto.s3.key import Key
+ 
+AWS_ACCESS_KEY_ID = '-------'
+AWS_SECRET_ACCESS_KEY = '----'
+ 
+bucket_name = 'demo-test'
+conn_s3 = boto.connect_s3(AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY)
+bucket = conn_s3.get_bucket(bucket_name)
+ 
+k=Key(bucket)
+k.key='images/rose111105.jpg'
+k.copy('demo-test', 'images/rose111105copy6.jpg')
+"""
+ 
+test_script ="""#!/usr/bin/env python
+import smtplib
+import boto
+from boto.s3.key import Key
+import numpy as np
+import sys
+ 
+AWS_ACCESS_KEY_ID = '-----' # Your AWS_KEY
+AWS_SECRET_ACCESS_KEY = '---------' # Your Secret KEY
+ 
+def send_notice(msg='testing'):
+    fromaddr = '******@gmail.com'
+    toaddrs = '******@gmail.com'
+    username = '******'
+    password = '******'
+     
+    server = smtplib.SMTP('smtp.gmail.com:587')
+    server.starttls()
+    server.login(username,password)
+    server.sendmail(fromaddr, toaddrs, msg)
+    server.quit()
+ 
+send_notice("start processing")
+#DO YOUR PROCESS
+send_notice("Finishing...")
+"""
+ 
+my_reservation = ec2conn.run_instances(ami_id,
+                                       instance_type=instance_type,
+                                       key_name=key_pair_name,
+                                       user_data=test_script)
+ 
+instance = my_reservation.instances[0]
+while not instance.update() == 'running':
+    time.sleep(5)
+instance.stop()
+#+END_SRC
+* AWS-EMR
+#+BEGIN_SRC shell
+spark-submit --deploy-mode cluster --master yarn --num-executors 3 --executor-memory 5g word2vec_app.py hdfs:///test/text8_lines
+#+END_SRC
+** Q: where is the log for spark? 
+A:  The stderr, stdout is in the nodes: /mnt/var/log/hadoop-yarn/containers/application_1488651686158_0002/container_1488651686158_0002_01_000001. Note that the driver may not be the master of the emr. Actually the driver could be an different node in another /spark-submit/. It can also be accessed in UI: 
+
+** Q: how to access cluster UI? 
+A: 1. setup dynamic port forwarding ssh -N -D 8157 hadoop@54.163.208.186
+   2. Then setup proxy http://docs.aws.amazon.com//emr/latest/ManagementGuide/emr-connect-master-node-proxy.html

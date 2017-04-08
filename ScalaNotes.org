@@ -160,11 +160,6 @@ res2: Int => Unit = <function1>
 def assertAllPos[S >:NonEmpty <: IntSet](r:S): S = 
 #+END_SRC
 
-#+BEGIN_SRC scale
-class C[+A] {...}  //C is covariant 
-class C[-A] {..}   //C is contravariant 
-class C[A]{}      //C is nonvariant 
-#+END_SRC
 *** Covariance 
 /Covariance/ should not be allowed for mutable data structure! This is what Java Array get wrong.  
 +If 
@@ -188,11 +183,21 @@ a). C[A] <: C[B] (covaraince)
 b). C[A] >: C[B] (contravariance) 
 c). neither C[A] or C[B] is a subtype of the other  (nonvariant)   
 
+#+BEGIN_SRC scale
+class C[+A] {...}  //C is covariant 
+class C[-A] {..}   //C is contravariant 
+class C[A]{}      //C is nonvariant 
+#+END_SRC
+
+For example, Function1[Int,PosReal] is subtype of Function1[PosInt, Real],     
 #+BEGIN_SRC scala
 trait Function1[-T,+U] {
     def apply(x:T):U
 }
 #+END_SRC
+so if  def g(f: Function1[PosInt,Real]): Unit 
+it's valid to call g(Function[Int, PosReal]) 
+
 ** Type Cast
 Note that Scala intentionally make the type cast not concise to discourage the use of type cast. 
 #+BEGIN_SRC scala

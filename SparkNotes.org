@@ -10,7 +10,7 @@
 #+BEGIN_SRC scala
 val people: RDD[Person] = ...
 people.foreach(println) 
-#On the driver: Noting happens. Why? RDD.foreach is an action. It prints to stdout of the executors but println return Unit.
+#What happen on the driver when we run the foreach command. Noting happens. Why? RDD.foreach is an action. It prints to stdout of the executors but println return Unit.
 #+END_SRC
 
 **** Transformations 
@@ -50,13 +50,16 @@ take(num:Int): Array[T]
 reduce(op:(A,A) => A): A
 foreach(f: T=>Unit): Unit 
 
-//the following actions have no analogue in scala collections but are specific to Spark when dealing with distributed data. 
++ the following actions have no analogue in scala collections but are specific to Spark when dealing with distributed data.
+#+BEGIN_SRC 
 takeSample(withRepl: Boolean, sum:Int):Array[T]
 takeOrdered(num: Int)(implicit ord: Ordering[T]): Array[T]: return the first n elements of the RDD using either their natural order ir a custom comparator(?)
 saveAsTextFile(path:String): Unit 
 saveAsSequenceFile(path:String): Unit (write to Hadoop SequenceFile)
+#+END_SRC 
 
-+ Different from Spark 
+
++ Different from scala collection.  
 Spark doesn't allows foldLeft/foldRight like regular scala collection. Recall foldLeft and foldRight are not parallelizable. Use aggregation instead.  
 
 **** Performance Implication 
@@ -73,44 +76,13 @@ val numErros = lastYearsLogs.map(_.lowercase).filter(_.contains("error")).count(
 
 #+END_SRC
 
-*** Persistence, Storage level(This is very unlike Scala Collections) 
-Spark allows user to specify Where(memory or disk) and how to persist(serialized or unserialized) 
-By default, each time we call a new action, the entire RDD must be computed "from scratch". To avoid this inefficiency, users can /persist/ immediate results.  Note that the use of /persist()/ in line a. Without it, the map in line a are evaluated each time an action is called(in this case, it's called numIterations time)  
-#+BEGIN_SRC scala
-val points = sc.textFile(...).map(parsePoint).persist() //a
-val w = Vector.zeros(d)
-for (i<- 1 to numIterations){
-   val gradient = points.map { p=> (1/(1+exp(-p.y*w.dot(p.x)))-1) * p.y * p.y}.reduce(_+_)
-w -= alpha * gradient 
-}
-#+END_SRC
-
-Storage level: 
-a). MEMORY_ONLY: in memory as regular Java objects
-b). DISK_ONLY: on disk as regular Java objects
-c). MEMORY_ONLY_SER: in memory as serialized Java objects(more compact)
-d). MEMORY_AND_DISK 
-e). MEMORY_AND_DISK_SER:Both in memory and on disk(spill over to disk to avoid re-computation). Note that a) doesn't spill to disk, it simply re-computes when the memory cannot hold the object anymore. 
-
-Persist() vs. cache(): Persist takes a)- e) while cache() is a shorthand for default which is a). 
- 
-*** Specialized RDD: DoubleRDDFunctions, PairRDDFunction
+*** Specialized RDD: DoubleRDD, PairRDD
+**** DoubleRDD
 + More functions are available for JavaDoubleRDD. We can use /rdd.mapToDouble(..)/ to get a JavaDoubleRDD so that /mean()/,/variance()/ is available.  
 + In Scala, Implicit conversion happens to convert RDD<Double> to DoubleRDD.  
 
-Gotcha: 
-+ Q: /reduce/ fails when applied to key-values pair? 
-A: /reduce/ needs to return a key-values pair to continue the chain. For example, in the /word-count/, if we want to just count the total number of words from a RDD[(word,n)], we don't care the first one entry of the tuple but we still need to return a tuple in the reduce function. 
-#+BEGIN_SRC python 
-rdd = sc.textFile("r8_no_stop.txt")
-input = rdd
-tokenized = input.map(lambda l: l.split("\t")).filter(lambda l: l.size>0)
-tokenized.map(lambda l: (l[0],1)).reduceByKey(lambda a,b: a+b).reduce(lambda x,y: x[1]+y[1]) #error: must return a tuple  
-tokenized.map(lambda l: (l[0],1)).reduceByKey(lambda a,b: a+b).reduce(lambda x,y: ("x",x[1]+y[1]))
-
-#+END_SRC
- 
 **** PairRDD
+compare with KeyValueGroupedDataset. 
 ***** groupByKey
 Spark: def groupByKey(): RDD[(K,Iterable[V])]
 vs. 
@@ -119,7 +91,7 @@ Scala Collection: def groupBy[K](f: A=>K): Map[K, Traversable[A]]
 Note that groupByKey() in Spark returns another RDD hence, groupByKey() is a transformation.
 ***** reduceByKey
 def reduceByKey(f: (V,V) =>V): RDD[(K,V)]
-reduceByKey could be more efficient than groupByKey since it reduces the amount of data requiring shuffle. 
+reduceByKey could be more efficient than groupByKey since it reduces the amount of data requiring shuffle (i.e., it supports partial accumulation). 
 ***** mapValues 
 def mapValues[U](f: V=>U): RDD[(K,U)]
 
@@ -144,7 +116,7 @@ Out[10]: [('a', 1), ('a', 2), ('b', 4)]
 #+END_SRC
 
 ***** Q: join vs. cogroup 
-A: /RDD<K,V>.join(RDD<K,W>)/ return RDD<K,(V,W)> while /RDD<K,V>.cogroup(RDD<K,W>)/ return /RDD<K,(Seq[V],Seq[W])>. Also, in case of  duplicated keys, /join/ return a RDD with duplicated keys (similar as SQL handle join)  while the return of /cogroup/ has no duplicated key; There is also a function call groupByKey  which can use to handles RDD with duplicated keys. 
+A: /RDD<K,V>.join(RDD<K,W>)/ return RDD<K,(V,W)> while /RDD<K,V>.cogroup(RDD<K,W>)/ return /RDD<K,(Seq[V],Seq[W])>. Also, in case of  duplicated keys, /join/ return a RDD with duplicated keys (similar as SQL handle join)  while the return of /cogroup/ has no duplicated key; There is also a function call groupByKey  which can use to handles RDD with duplicated keys. Under the hood, /join/ is implemented by /cogroup/. cogroup() can be used for much more than just implementing joins. We can also use it to implement intersect by key. Additionally, cogroup() can work on three or more RDDs at once. (Cf. Learning Spark: Chapter 4: Grouping Data). 
 #+BEGIN_SRC python 
 In [20]: rdd_a = sc.parallelize([('a',2), ('a',3),('b',4)])
 
@@ -172,6 +144,38 @@ Out[28]: [('a', (2, 5)), ('a', (2, 6)), ('a', (3, 5)), ('a', (3, 6)), ('b', (4, 
 
 #+END_SRC 
 
+***** Gotcha: 
++ Q: /reduce/ fails when applied to key-values pair? 
+A: /reduce/ needs to return a key-values pair to continue the chain. For example, in the /word-count/, if we want to just count the total number of words from a RDD[(word,n)], we don't care the first one entry of the tuple but we still need to return a tuple in the reduce function. 
+#+BEGIN_SRC python 
+rdd = sc.textFile("r8_no_stop.txt")
+input = rdd
+tokenized = input.map(lambda l: l.split("\t")).filter(lambda l: l.size>0)
+tokenized.map(lambda l: (l[0],1)).reduceByKey(lambda a,b: a+b).reduce(lambda x,y: x[1]+y[1]) #error: must return a tuple  
+tokenized.map(lambda l: (l[0],1)).reduceByKey(lambda a,b: a+b).reduce(lambda x,y: ("x",x[1]+y[1]))
+
+#+END_SRC
+
++ Q: /map/ fails when applied to PairRDD? 
+A: Just like regular RDD, RDD[T].map a function with one parameter(which is a pair) instead of two parameters. 
+#+BEGIN_SRC python
+scala> val rdd = sc.parallelize(List(("a",1),("b",2), ("c",3)))
+rdd: org.apache.spark.rdd.RDD[(String, Int)] = ParallelCollectionRDD[5] at parallelize at <console>:24
+
+//What's wrong? 
+scala> rdd.map((k:String, v: Int) => ("doh!",v))
+<console>:27: error: type mismatch;
+ found   : (String, Int) => (String, Int)
+ required: ((String, Int)) => ?  //this tells us the function expect a function take one parameter(which is a pair) instead of two parameters. 
+       rdd.map((k:String, v: Int) => ("doh!",v))
+
+//the correct way:
+rdd.map { case (k:String, v: Int) => ("doh!",v)}
+                                  
+#+END_SRC
+
+val rdd = sc.parallelize(List(("a",1),("b",2), ("c",3)))
+rdd: org.apache.spark.rdd.RDD[(String, Int)] = ParallelCollectionRDD[5] at parallelize at <console>:24
 
 *** Partitioner 
 Two kinds of partitioning available in Spark: Hash partitioning and Range partitioning. Both are only available for Key-value RDD, i.e, customer partitioning is only possible for key-value RDD.  
@@ -209,6 +213,22 @@ org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[366]
 + Use function toDebugString to see its execution plan: 
 partitioned.reducedByKey((v1,v2) => (v1._1 + v2._1, v1._2 + v2._2).toDebugString 
 
+#+BEGIN_SRC scala
+scala> val wordCount = sc.textFile("README.md").flatMap(_.split("\\s+")).map((_, 1)).reduceByKey(_ + _)
+wordCount: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[21] at reduceByKey at <console>:24
+
+
+// The (2) in the toDebugString indicates the level of parallelism in each stage, wordCount.getNumPartitions == 2  
+scala> wordCount.toDebugString
+res13: String =
+(2) ShuffledRDD[21] at reduceByKey at <console>:24 []
+ +-(2) MapPartitionsRDD[20] at map at <console>:24 []
+    |  MapPartitionsRDD[19] at flatMap at <console>:24 []
+    |  README.md MapPartitionsRDD[18] at textFile at <console>:24 []
+    |  README.md HadoopRDD[17] at textFile at <console>:24 []
+#+END_SRC
+
+
 **** Q: When does "Shuffle" happen? 
 A: Transformation may involve shuffling. Shuffle only happen when action occurs. 
 
@@ -227,12 +247,34 @@ val paris = wordsRdd.map(c => (c,1)).groupByKey().dependencies
 
 #+END_SRC
 
+*** Persistence, Storage level(This is very unlike Scala Collections) 
+Spark allows user to specify Where(memory or disk) and how to persist(serialized or unserialized) 
+By default, each time we call a new action, the entire RDD must be computed "from scratch". To avoid this inefficiency, users can /persist/ immediate results.  Note that the use of /persist()/ in line a. Without it, the map in line a are evaluated each time an action is called(in this case, it's called numIterations time)  
+#+BEGIN_SRC scala
+val points = sc.textFile(...).map(parsePoint).persist() //a
+val w = Vector.zeros(d)
+for (i<- 1 to numIterations){
+   val gradient = points.map { p=> (1/(1+exp(-p.y*w.dot(p.x)))-1) * p.y * p.y}.reduce(_+_)
+w -= alpha * gradient 
+}
+#+END_SRC
+
+Storage level: 
+a). MEMORY_ONLY: in memory as regular Java objects
+b). DISK_ONLY: on disk as regular Java objects
+c). MEMORY_ONLY_SER: in memory as serialized Java objects(more compact)
+d). MEMORY_AND_DISK 
+e). MEMORY_AND_DISK_SER:Both in memory and on disk(spill over to disk to avoid re-computation). Note that a) doesn't spill to disk, it simply re-computes when the memory cannot hold the object anymore. 
+
+Persist() vs. cache(): Persist takes a)- e) while cache() is a shorthand for default which is a). 
+ 
+
 ** Hadoop vs. Spark 
 Hadoop relies on IO to connect iterations while Spark tries to do in-memory computation. 
 ** Programming Framework 
 http://spark.apache.org/docs/latest/programming-guide.html
 Cf. Learning Spark 
-+ In Spark, there is no substantial benefit to write a single complex map instead of chaining together many simple operations. Thus, users are free to organize their program into small, more manageable operations. 
++ In Spark, there is no substantial benefit to write a single complex map instead of chaining together many simple operations. Thus, users are free to organize their program into small, more manageable operations (sgu: this refers Spark execution plan: multiple operations might be fused to one) 
 
 *** Job, Stages, Tasks, 
 /Job/: the set of stages for a particular action. 
@@ -280,7 +322,6 @@ Note that spark-ec2 install two HDFS: ephemeral-hdfs and persistent-hdfs. By def
 * Spark SQL
 ** Motivation 
 Structure information enables optimization. Think about a query involves both filter and join. Operation order matters. Is it cool that Spark can automatically figure the right order. 
-It's common to have filter and join. 
 Three main goals of Spark SQL: 
 1. Support relational processing both with Spark programs(on RDD) and on external data sources with friendly API
 2. High performance 
@@ -292,11 +333,9 @@ unstructure: log files, images.
 ** DataFrame 
 1. An relational API over RDD: for convenience. Note that Dataframe has its own API too. 
 2. Able to be automatically optimized. 
-3. Untyped: The elements within DataFrames are Rows, which are not parameterized by a type. Therefore, the scala complier cannot type check Spark SQL schemas in DataFrames. 
- 
-** RDD vs. Dataset vs. DataFrame
-http://spark.apache.org/docs/latest/sql-programming-guide.html#datasets-and-dataframes
-DataFrame are RDD of Row 
+3. Untyped: The elements within DataFrames are Row (Note that Row has no type parameter), which are not parameterized by a type. Therefore, the scala compiler cannot type check Spark SQL schemas in DataFrames.
+*** DataFrame are RDD of Row("Untyped"). 
+
 #+BEGIN_SRC  python 
 In [2]: df = spark.createDataFrame([
    ...:     (0, "a b c".split(" ")),
@@ -308,15 +347,22 @@ Out[16]:
  Row(id=1, words=[u'a', u'b', u'b', u'c', u'a'])]
 #+END_SRC
 
-** Q: What literals(statements) are available in Spark SQL. 
-A: Largely what's available in HiveSQL.  
+Row are treated as generic ("untyped"). Scala compiler cannot type-check. 
+#+BEGIN_SRC scala
+df.filter("state" == "CA") #This complier even if no "state" column exist. 
+#+END_SRC
+  
 
-**  Dataframe vs. Pandas dataframe
-http://www.kdnuggets.com/2016/01/python-data-science-pandas-spark-dataframe-differences.html
-Spark dataframe is /immutatble/ and is designed for lazy evaluation, distributed computation. 
+*** Q: Why it's bad to be untyped?
+A: In the following example, complier cannot catch the problem that the DataFrame df doesn't have state column.
+#+BEGIN_SRC scala
+df.filter("state" == "CA") 
+#+END_SRC
 
-** Create DataFrame
-pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0). 
+
+
+*** Create DataFrame
+    pyspark.sql.dataframe.DataFrame can be create directly from text, json, ect. Alternatively, it can also be created from a RDD. The schema can be inferred automatically or be supplied by StructType(which is a list of StructField). DataFrame.rdd returns a RDD for that dataframe(after spark 2.0). 
 *** create DataFrame from RDD
 #+BEGIN_SRC python 
     data_path = "r52-no-stop.txt" 
@@ -352,8 +398,105 @@ teenagers= spark.sql("SELECT name FROME people where age >=13 and age <=19")
 teenagers= spark.sql("SELECT name FROM people where age >=13 and age <=19")
 type(teenagers) #Dataframe
 teenNames = teenagers.rdd.map(lambda: "Name: " + p.name)  #teenNames is a RDD
+#+END_SRC
 
-** Schema 
+*** DataFrame API 
+**** How to select columns? 
+1. using $-notation(requires: import spark.implicits._): df.filter($'age' > 18)
+2. Referring to the Dataframe: df.filter(df("age") > 18)
+3. Using SQL query string: df.filter("age > 18")
+#+BEGIN_SRC scala
+case class Employee(id:Int, fname: String, lname: String, age: Int, city: String)
+val employeeDF = sc.parallelize(...).toDF
+val sydneyEmployeesDF = employeeEF.select("id","lname"). where("city=='Sydney'").orderBy("id"
+
+// boolean
+employeeDF.filter(($"age">25) && ($"city" == "Sydney")).show()
+#+END_SRC 
+
+**** GroupBy and Aggregation.  
+The groupBy function which returns a RelationalGroupedDataset which usually is followed by an agg/max/count to get back a dataframe. 
+#+BEGIN_SRC scala
+//example 1 
+case class Listing(street: String, zip: Int, price: Int) 
+val listingsDF = .. //DataFrame of Listings. 
+import org.apache.spark.sql.functions._
+val mostExpensiveDF = listingsDF.groupBy($"zip").max("price")
+
+//example 2
+val postsDF = postsDF.groupBy($"authorID",$"subform")
+                     .count($"authorID")
+                     .orderBy($"subform",$"count(authorID)".desc)
+
+#+END_SRC
+
+**** Handling missing values in DataFrame.  
+#+BEGIN_SRC scala 
+// drop missing values: 
+drop(), drop ("all") drop(Array("col1,"col2"))
+
+//fill: 
+fill(0)
+fill(Map("minBalance" -> 0)) //fill only one column 
+replace(Array("id"),Map(1 -> 2)) //replace 1 with 2 in Array column 
+
+#+END_SRC
+
+**** Joins on DataFrame 
+#+BEGIN_SRC scala
+df1.join(df2, $"df1.id" == $"df2.id","right_outer")
+//or 
+val df3 = df1.join(df2, df1("id") == df2("id"))
+
+#+END_SRC
+
+**** common functions 
+#+BEGIN_SRC scala
+collect(): Array[Row] 
+count(): Long 
+first(): Row/head(): Row  //head and first are the same
+show(): Unit 
+take(n:Int): Array[Row]
+#+END_SRC
+
+#+BEGIN_SRC python 
+# number of rows, 
+df.count() #return number of row regardless NA or not(vs. Pandas) 
+
+# number of columns
+len(df.columns)
+
+# show the first row  
+df.first()
+
+#only take the first n row; 
+#df.limit() return a new dataframe while head()/take() return a list of Row
+df.limit(1).collect() [Row(age=2, name=u'Alice')]
+
+# show unique values of a column 
+df.select('col_name').distinct().show()
+
+#split a dataset 
+df_train, df_test = df.randomSplit([0.8,0.2])
+
+#Stratified sampling: 
+>>> from pyspark.sql.functions import col 
+>>> dataset = sqlContext.range(0, 100).select((col("id") % 3).alias("key")) 
+>>> sampled = dataset.sampleBy("key", fractions={0: 0.1, 1: 0.2}, seed=0) 
+>>> sampled.groupBy("key").count().orderBy("key").show() 
+
+#convert  row of vectors to np.array, /d/ below is a Row
+w2v_plot = np.array(w2v.rdd.map(lambda d: d.vector.toArray()).take(100))
+
+#+END_SRC
+**** Optimization on DataFrame 
+DataFrame API has built-in automatic optimization which RDD API cannot do. For example, for RDD API, the it's usually more efficient to first filter and then join; for DataFrame API, the operation order doesn't matter that much. Spark DataFrame use /Catalyst/ to optimize query. /Catalyst/ might re-order the operation, or reducing the amount of data requires IO(since it knows the schema). Spark DataFrame uses  /Tungsten/  off-heap(avoid garbage collection overhead) data encoder. Tungsten stores data in column-based.  
+#+BEGIN_SRC scala 
+df1.join(df2, df1("id") == df2("id")).filter().filter 
+
+#+END_SRC
+
+*** Schema 
 *** print 
 #+BEGIN_SRC python 
 from pyspark.ml.feature import HashingTF, Tokenizer
@@ -378,7 +521,7 @@ root
  |-- features: vector (nullable = true)
 
 #+END_SRC
-** metadata: 
+*** metadata: 
 http://stackoverflow.com/questions/32628845/is-there-a-way-to-add-extra-metadata-for-spark-dataframes
 columns in dataframe can have metadata 
 #+BEGIN_SRC python
@@ -431,7 +574,7 @@ Out[24]:
 
 
 #+END_SRC
-** Chain operation 
+*** Chain operation 
 Note the use of the df.select(..).withColumn(..) and col(""). About the use of col("exp") function: not needed if exp is just a column name, but needed if more complicated expression (Cf. https://spark.apache.org/docs/2.0.0/api/java/org/apache/spark/sql/Column.html) 
 #+BEGIN_SRC python 
 from pyspark.ml.feature import Tokenizer, RegexTokenizer
@@ -455,37 +598,181 @@ regexTokenized.select("sentence", "words") \
 
 #+END_SRC
 
-** common functions: 
-#+BEGIN_SRC python 
-# number of rows, 
-df.count() #return number of row regardless NA or not(vs. Pandas) 
 
-# number of columns
-len(df.columns)
 
-# show the first row  
-df.first()
+***  Dataframe vs. Pandas dataframe
+http://www.kdnuggets.com/2016/01/python-data-science-pandas-spark-dataframe-differences.html
+Spark dataframe is /immutatble/ and is designed for lazy evaluation, distributed computation. 
 
-#only take the first n row; 
-#df.limit() return a new dataframe while head()/take() return a list of Row
-df.limit(1).collect() [Row(age=2, name=u'Alice')]
 
-# show unique values of a column 
-df.select('col_name').distinct().show()
 
-#split a dataset 
-df_train, df_test = df.randomSplit([0.8,0.2])
 
-#Stratified sampling: 
->>> from pyspark.sql.functions import col 
->>> dataset = sqlContext.range(0, 100).select((col("id") % 3).alias("key")) 
->>> sampled = dataset.sampleBy("key", fractions={0: 0.1, 1: 0.2}, seed=0) 
->>> sampled.groupBy("key").count().orderBy("key").show() 
 
-#convert  row of vectors to np.array, /d/ below is a Row
-w2v_plot = np.array(w2v.rdd.map(lambda d: d.vector.toArray()).take(100))
+** Dataset (not available in Python)
+Dataset allows query optimization and type-safety.
++ Dataset can be thought of as typed distributed collections of data.+ Dataset API unifies the DataFrame and RDD APIs. Mix and match functional operation(/typed transformace/) and relational operation(aka. /untyped transfroms/) as shown below. However, Catalyst cannot look into functional operation and hence cannot optimized those operations. 
+#+BEGIN_SRC scala
+//listingsDS is Dataset[Listing]
+listingsDS.groupByKey(l => l.zip)  //looks like groupByKey on RDDs!
+          .agg(avg($"price").as[Double])  //looks like DataFrame operations. 
+#+END_SRC
++ Dataset require structured/semi-structured data. Schemas and Encoders core part of Datasets. 
++ In scala, Dataframe is just a type alias of Dataset[Row]  
+type DataFrame = Dataset[Row] 
++ Dataset has more type info than DataFrame and more optimization than regular RDD. Even though Dataset is not completely type-safe, it's pretty much type-safe. 
+
++ More succinct syntax. 
+df.collect() returns an Array[Row]; To collectly parse and cast a Row object, it's error prone as shown below. 
+#+BEGIN_SRC scala 
+case class Listing(street: String, zip: Int, price: Int)
+val listingsDF = 
+import org.apache.spark.sql.functions._ 
+val averagePricesDF = listingsDF.groupBy($"zip").avg("price") 
+val averagePrices = averagePricesDF.collect()//Array[Row]
+
+
+//You might think price is an Int, so you do 
+val averagePricesAgain = averagePrices.map { 
+row => (row(0).asInstanceOf[String], row(1).asInstanceOf[Int])
+}//casting error: since the type is wrong. 
+//Therefore, we usually need to look at the schema of Row 
+averagePrices.head.schema.printTreeString()
+
+/The casting works but error prone.. 
+val averagePricesAgain = averagePrices.map {
+row => (row(0).asInstanceOf[Int], row(1).asInstanceOf[Double])
+}
+#+END_SRC
+
+*** create a Dataset 
+#+BEGIN_SRC scala
+//create a dataset from a dataframe. 
+myDF.toDS //requires import spark.implicits._
+
+//from RDD 
+myRDD.toDS
+
+//from json 
+val myDS = spark.read.json("people.json").as[Person]
 
 #+END_SRC
+
+*** TypedColumn
+Dataset operates on /org.apache.spark.sql.TypedColumn/ not  /org.apache.spark.sql.Column/ not  
+#+BEGIN_SRC scala
+.agg(avg($"price")).show //error: avg($"price") is Column not TypedColumn, use avg($"price").as[Double] instead. 
+#+END_SRC
+
+*** Aggregation for Dataset
+
+Dataset has no reduceByKey function. We can emulate  the same reduceByKey semantics by using groupByKey, mapGroup, mapValues and reduceGroups as shown below. 
+
+**** The Defintions 
+Note the def of Dataset.groupByKey, KeyValueGroupedDataset.mapValues 
+#+BEGIN_SRC scala
+class Dataset[T] extends Serializable
+def groupByKey[K](func: (T) ⇒ K)(implicit arg0: Encoder[K]): KeyValueGroupedDataset[K, T]
+
+class KeyValueGroupedDataset[K,V] extends Serializable 
+def mapGroups[U](f: (K, Iterator[V]) ⇒ U)(implicit arg0: Encoder[U]): Dataset[U]
+def mapValues[W](func: (V) ⇒ W)(implicit arg0: Encoder[W]): KeyValueGroupedDataset[K, W]
+def reduceGroups(f: (V, V) ⇒ V): Dataset[(K, V)]
+#+END_SRC
+
+****  Dataset[T].groupByKey 
+Note that /Dataset[T].groupByKey/ return /KeyValueGroupedDataset[K,V]/ which is NOT a Dataset. This is unlike the RDD[(K,V)].groupByKey which returns another RDD[(K, Iterable[V])]
+#+BEGIN_SRC scala
+class Dataset[T] extends Serializable
+def groupByKey[K](func: (T) ⇒ K)(implicit arg0: Encoder[K]): KeyValueGroupedDataset[K, T]
+#+END_SRC
+
+**** KeyValueGroupedDataset.mapGroups
+This works but not efficient since mapGroup *doesn't support partial aggregation* and as a result shuffling all the data in the dataset. /mapValues/  and /reduceGroups/ are more efficient. 
+#+BEGIN_SRC scala
+//task: concat the string with the same key 
+val keyValues = List((3,"Me"), (1,"Thi"), (2,"Se"), (3, "ssa"), (1, "sIsA"), (3, "ge:"), (3, "-)"), (2, "cre"), (2, "t"))
+val keyValuesDS = keyValues.toDS //use Scala implicit conversion, require import spark.implicits._ 
+
+keyValuesDS.groupByKey(p=>p._1)
+           .mapGroups((k,vs) => (k, vs.foldLeft("")((acc,p) => acc + p._2))) # note that vs is an Iterator[(Int,String)] 
+           .sort("_1").show() //sort by the key again. 
+
+#+END_SRC 
+
+**** /mapValues/ and /reduceGroups/ 
+#+BEGIN_SRC scala
+/task: concat the string with the same key 
+val keyValues = List((3,"Me"), (1,"Thi"), (2,"Se"), (3, "ssa"), (1, "sIsA"), (3, "ge:"), (3, "-)"), (2, "cre"), (2, "t")) 
+val keyValuesDS = keyValues.toDS //use Scala implicit conversion, require import spark.implicits._ 
+
+keyValuesDS.groupByKey(p=> p._1) //return KeyValueGroupedDataset[Int, (Int, String)]
+           .mapValues( p => p._2) // 
+           .reduceGroups((acc,str) => acc+ str)
+#+END_SRC
+
+****  Aggregators. 
+#+BEGIN_SRC scala
+//definition, require import org.apache.spark.sql.expressions
+abstract class Aggregator[-IN, BUF, OUT] extends Serializable
+abstract def bufferEncoder: Encoder[BUF]
+abstract def finish(reduction: BUF): OUT
+abstract def merge(b1: BUF, b2: BUF): BUF
+abstract def outputEncoder: Encoder[OUT]
+abstract def reduce(b: BUF, a: IN): BUF
+abstract def zero: BUF
+def toColumn: TypedColumn[IN, OUT]
+#+END_SRC
+ 
+#+BEGIN_SRC scala 
+//task: concat the string with the same key 
+import org.apache.spark.sql.expressions.Aggregator
+import org.apache.spark.sql.Encoder
+import org.apache.spark.sql.Encoders
+val keyValues = List((3,"Me"), (1,"Thi"), (2,"Se"), (3, "ssa"), (1, "sIsA"), (3, "ge:"), (3, "-)"), (2, "cre"), (2, "t"))
+val keyValuesDS = keyValues.toDS //use Scala implicit conversion, require import spark.implicits._ 
+
+val strConcat = new Aggregator[(Int,String), String, String]{
+def zero: String = ""
+def reduce(b:String, a: (Int, String)):String = b + a._2
+def merge(b1:String, b2:String): String = b1+ b2
+def finish(r:String): String =r 
+
+//? Why we need override? Actually, it's not needed. 
+override def bufferEncoder: Encoder[String] = Encoders.STRING #Note tat Encoders is an object while Encoder is a trait with a type parameter
+override def outputEncoder: Encoder[String] = Encoders.STRING
+}.toColumn 
+
+keyValuesDS.groupByKey(pair => pair._1).agg(strConcat).show
+
+#+END_SRC
+
+
+** RDD vs. Dataset vs. DataFrame
+http://spark.apache.org/docs/latest/sql-programming-guide.html#datasets-and-dataframes
+
+Q: When to use which? (From Coursera Spark Course)
+Use RDD if 
++ you have unstructured data 
++ You need to super fine-tune and manage low-level details of RDD computations. You cannot trust the optimizer to do it for you 
++ You have complex data types and cannot be serialized with Encoders. Encoders cannot yet nicely deal with user-define type. 
+
+Use Dataset if 
++ You have structured/semi-structured. You want to use the read function from json and then map to a case class. 
++ You want to work with functional API 
++ You need good performance, but it doesn't have to be the best. 
+
+Use DataFrames when 
++ You have structured/semi-structured data 
++ You want to rely on as much as possible the optimizer 
++ You can deal with the fact it's untyped. 
+
+
+
+
+** Q: What literals(statements) are available in Spark SQL. 
+A: Largely what's available in HiveSQL.  
+
+
 * Spark MLlib
 ** Pipeline
 *** Summary
@@ -764,113 +1051,6 @@ http://stackoverflow.com/questions/37903288/what-do-colum-rawprediction-and-prob
 This is related to an improvement of MLlib regarding to MapReduce Paradigm. Multi-level aggregation tree is used to combined partially on a small set of executors before they sent to the drivers which is dramatically reduces the load of the driver. https://databricks.com/blog/2014/09/22/spark-1-1-mllib-performance-improvements.html
 Note this WIP: https://issues.apache.org/jira/browse/SPARK-17090
 
-* AWS-EC2
-** Boto Script 
-#+BEGIN_SRC python 
-import boto.ec2
-conn = boto.ec2.connect_to_region("us-east-1")
-#conn.get_all_security_groups()[1].id #u'sg-7ea8bf1a'
-reservation = conn.run_instances("ami-d05e75b8",key_name = "sgu-ec2-all", instance_type = "t2.micro", security_groups=["launch-wizard-1"]) #aws_access_key is in ~/.boto or set in env or pass in directly
-reservations = conn.get_all_reservations()
-inst = reservations[0].instances[0] #get the instance, inst? show all attribute, include the ip_address, type, ect. 
-statuses = conn.get_all_instance_status()
-#make sure instance is available
-conn.terminate_instances(instance_ids = [inst.id])
-#+END_SRC 
-** system_status check vs. instance_status check 
-system_status is for the underlying EC2 system that are used by each individual  instance. System status problem requires AWS involvement to repair. Instance status is for individual instances. The customer can fix instance status problems.  
-** Q: EBS device mapping? instance_profile? initiliazation script(user-data)
-** Q: how to use VPC
-After 2013/12, each account comes with a default VPC which has a default subnet in each availability zone. If we don't specify a subnet when launching an intance, the instance is launch into the default VPC and default subnet.  We can then create a *security group* to manage the network traffic. 
-http://docs.aws.amazon.com/cli/latest/reference/ec2/authorize-security-group-ingress.html
-http://stackoverflow.com/questions/24232849/source-security-group-isnt-working-as-expected-in-aws
-https://aws.amazon.com/vpc/
-
-** Q: How to run a script after the instance starts?
-Use the user-data kwarg in /image.run(..)/
-http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html
-https://imiloainf.wordpress.com/2012/01/04/use-boto-run-user-data-in-aws-instance/
-#+BEGIN_SRC python
-import boto
-from boto.ec2.connection import EC2Connection
-import time
- 
-ami_id = '----'                                                  # ami-ubuntu-64 (settedup) use t1.micro as instance type
-key_pair_name = '----'
-AWS_ACCESS_KEY_ID = '----'
-AWS_SECRET_ACCESS_KEY = '----'
- 
-ec2conn = EC2Connection(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
- 
-test_script_00 = """#!/bin/bash
-sudo apt-get update
-sudo apt-get install imagemagick
-"""
- 
-test_script_01 = """#!/usr/bin/env python
- import boto
- from boto.s3.key import Key
- 
-AWS_ACCESS_KEY_ID = '-------'
-AWS_SECRET_ACCESS_KEY = '----'
- 
-bucket_name = 'demo-test'
-conn_s3 = boto.connect_s3(AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY)
-bucket = conn_s3.get_bucket(bucket_name)
- 
-k=Key(bucket)
-k.key='images/rose111105.jpg'
-k.copy('demo-test', 'images/rose111105copy6.jpg')
-"""
- 
-test_script ="""#!/usr/bin/env python
-import smtplib
-import boto
-from boto.s3.key import Key
-import numpy as np
-import sys
- 
-AWS_ACCESS_KEY_ID = '-----' # Your AWS_KEY
-AWS_SECRET_ACCESS_KEY = '---------' # Your Secret KEY
- 
-def send_notice(msg='testing'):
-    fromaddr = '******@gmail.com'
-    toaddrs = '******@gmail.com'
-    username = '******'
-    password = '******'
-     
-    server = smtplib.SMTP('smtp.gmail.com:587')
-    server.starttls()
-    server.login(username,password)
-    server.sendmail(fromaddr, toaddrs, msg)
-    server.quit()
- 
-send_notice("start processing")
-#DO YOUR PROCESS
-send_notice("Finishing...")
-"""
- 
-my_reservation = ec2conn.run_instances(ami_id,
-                                       instance_type=instance_type,
-                                       key_name=key_pair_name,
-                                       user_data=test_script)
- 
-instance = my_reservation.instances[0]
-while not instance.update() == 'running':
-    time.sleep(5)
-instance.stop()
-#+END_SRC
-* AWS-EMR
-#+BEGIN_SRC shell
-spark-submit --deploy-mode cluster --master yarn --num-executors 3 --executor-memory 5g word2vec_app.py hdfs:///test/text8_lines
-#+END_SRC
-** Q: where is the log for spark? 
-A:  The stderr, stdout is in the nodes: /mnt/var/log/hadoop-yarn/containers/application_1488651686158_0002/container_1488651686158_0002_01_000001. Note that the driver may not be the master of the emr. Actually the driver could be an different node in another /spark-submit/. It can also be accessed in UI: 
-
-** Q: how to access cluster UI? 
-A: 1. setup dynamic port forwarding ssh -N -D 8157 hadoop@54.163.208.186
-   2. Then setup proxy http://docs.aws.amazon.com//emr/latest/ManagementGuide/emr-connect-master-node-proxy.html
-
 * Setting up Spark-EC2
 
 ** dissect spark_ec2.py
@@ -935,59 +1115,4 @@ res = [s for s in conn.get_all_reservations() if s.id == res.id][0]
 print "ssh -i path-to-pem root@%s" % (res.instances[0].ip_address,)
 
 #+END_SRC
-* HDFS 
-** UI: 
-http://{host}:50070
- 
-** configuration
-*** Q: What is the default config dir? 
-A: If the env /HADOOP_CONF_DIR/ is not defined, then /HADOOP_CONF_DIR/ is set to ${HADOOP_PREFIX}/conf or ${HADOOP_PREFIX}/etc/hadoop (see the logic in libexec/hadoop-config.sh
-*** Default values 
-+ the default value of /dfs.data.dir/, /dfs.name.dir/ are based on /hadoop.tmp.dir/(in etc/hadoop/core-site.xml). Cf. https://hadoop.apache.org/docs/r2.7.3/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml
-** /hdfs getconfig/
-#+BEGIN_SRC shell
-hdfs getconf -confKey dfs.blocksize
-#+END_SRC
-** Debug and Monitor 
-*** /jps/
-the jdk /jps/ command list all the daemon. 
-#+BEGIN_SRC shell
-[hadoop-user@master]$ jps
-26893 Jps
-26832 TaskTracker
-26620 SecondaryNameNode
-26333 NameNode
-26484 DataNode
-26703 JobTracker
 
-#+END_SRC
-
-*** /netstat/
-#+BEGIN_SRC shell
-#-p: PID; l: listening u: TCP; e: extended info; n: numeric port 
-hduser@ubuntu:~$ sudo netstat -plten | grep java
-tcp   0  0 0.0.0.0:50070   0.0.0.0:*  LISTEN  1001  9236  2471/java
-tcp   0  0 0.0.0.0:50010   0.0.0.0:*  LISTEN  1001  9998  2628/java
-tcp   0  0 0.0.0.0:48159   0.0.0.0:*  LISTEN  1001  8496  2628/java
-tcp   0  0 0.0.0.0:53121   0.0.0.0:*  LISTEN  1001  9228  2857/java
-tcp   0  0 127.0.0.1:54310 0.0.0.0:*  LISTEN  1001  8143  2471/java
-tcp   0  0 127.0.0.1:54311 0.0.0.0:*  LISTEN  1001  9230  2857/java
-tcp   0  0 0.0.0.0:59305   0.0.0.0:*  LISTEN  1001  8141  2471/java
-tcp   0  0 0.0.0.0:50060   0.0.0.0:*  LISTEN  1001  9857  3005/java
-tcp   0  0 0.0.0.0:49900   0.0.0.0:*  LISTEN  1001  9037  2785/java
-tcp   0  0 0.0.0.0:50030   0.0.0.0:*  LISTEN  1001  9773  2857/java
-
-#+END_SRC
-** /fsck/ 
-fs checking utility 
-#+BEGIN_SRC 
-# Show the block size of a file
-# We can see more details of a block in the web UI Utilities tab 
-hdfs /test/text8_2 -files -blocks 
-#+END_SRC
-** /put/ with blocksize and dfs.replication
-#+BEGIN_SRC 
-#specify block size 
-hadoop fs -Ddfs.blocksize=33554432  -put /path/file1 /path/file2 
- hadoop fs -Ddfs.replication=8 -put text8_lines /test/ 
-#+END_SRC
