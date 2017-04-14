@@ -491,6 +491,20 @@ import numpy as np
 data=np.zeros((2,), dtype=[('A','i4'),('B','f4'),('C','a10')])
 data[:]=[(1,2.0,'Hello'),(2,3,'World')]
 #+END_SRC
+** Q&A
+*** A[A>4] gives 1d even if A is 2d. What to obtain a 2D array?
+Use np.where(condition[,x,y]) 
+#+BEGIN_SRC python 
+np.where(A>4, A, 0.0) #fill zero for condition false. 
+#+END_SRC
+
+*** How to extract a sub-array? 
+Use np.ix_
+#+BEGIN_SRC python 
+# if a is 2d
+a[np,ix_([1,3],[2,5])] return a sub-array(also 2d) in row 1,3 and columns 2,5. The
+#+END_SRC
+
 * Scikit-learn 
 ** "Normalization" for OLS 
 The normalization flag in LinearRegression constructor is not clearly explained. sklearn.linear_model.LinearRegression(normalize=True). After some digging,
