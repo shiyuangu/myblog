@@ -223,6 +223,12 @@ FNR==1 && NR!=1 {while (/^<header>/) getline;}  #skip the lines started with the
 #### -v key=values change the program variables; OFS is the output field separator; without -v OFS='"', the double quotes would be gone in the output.  
  awk -F'"' -v OFS='"' '{ for (i=2; i<=NF; i+=2) gsub(",", "", $i) } 1' tmp.txt
 #+END_SRC
+
+*** print lines n1-n2
+#+BEGIN_SRC shell
+awk '(NR==2),(NR==4){print}' tmp.txt
+#+END_SRC
+
 ** /paste/
 *** Concatenate files columnwise  
 #+BEGIN_SRC zsh
