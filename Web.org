@@ -1,0 +1,18 @@
+* Web2.0
+https://en.wikipedia.org/wiki/Web_2.0
+** Differentiating Characteristic 
++ Software as a service (SaaS), eg: Google Doc 
++ Rich User experience, Mass participation, eg. Wordpress 
++ Folksnomy: allows users to collectively classify and find information (Twitter hashtags)  
++ Web 2.0 sites provide users with information storage, creation, and dissemination capabilities that were not possible in the environment now known as "Web 1.0"
++ Web-oriented architecture, defines how Web 2.0 applications expose their functionality so that other applications can leverage and integrate the functionality providing a set of much richer applications. Examples are feeds, RSS feeds, web services, mashups. Web APIs: REST/SOAP
+
+
+** Key Enabled Technology 
+1. Ajax/Javascript: Asynchronously send/recive, DOM
+2. HTML5 
+
+** Key Concepts
++ Rich Internet Application 
+
++ Social Web 

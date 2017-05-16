@@ -1,0 +1,54 @@
+* Database Normalization 
+* CAP Theorem 
+https://en.wikipedia.org/wiki/CAP_theorem
+In the present of network partition, consistency and availability cannot be achieved simultaneously. 
+** Favor consistency over availability: RDBMS,Paxos
+** Favor availability over consistency: BASE, NoSQL 
+** Q: What's the problem of BASE (vs. Strong consistence) 
+https://mariadb.org/eventually-consistent-databases-state-of-the-art/
+This weak form of consistency does not restrict the ordering of operations on different keys in any way, thus forcing programmers to reason about all possible orderings and exposing many inconsistencies to users. For example, under eventual consistency, after Alice updates her profile, she might not see that update after a refresh. Or, if Alice and Bob are commenting back-and-forth on a blog post, Carol might see a random non-contiguous subset of that conversation.
+ When an engineer builds an application on an eventually consistent database, the engineer needs to answer several tough questions every time when data is accessed from the database:
+What is the effect on the application if a database read returns an arbitrarily old value?
+What is the effect on the application if the database sees modification happen in the wrong order?
+What is the effect on the application if a client is modifying the database as another tries to read it?
+And what is the effect that my database updates have on other clients, which are trying to read the data?
+
+* ACID 
+Atomicicty Consistency, Isolation, Durability 
+** Transaction 
+In the context of databases, a sequence of database operations that satisfies the ACID properties and, thus, can be perceived as *single logical operation* on the data, is called a transaction. For example, a transfer of funds from one bank account to another, even involving multiple changes such as debiting one account and crediting another, is a single transaction. Eg: Transfer money from one account A to another account B is a *transaction* which consists of two actions: subtract 10 from A and add 10 to B. 
+
+** Implementation 
+*** How to return to previous valid state(Cascading Rollback) : 
+When a transaction T1 causes a failure and rollback must be performed. Since other transactions dependent on T1's actions must also be rollbacked due to T1's failure, thus causing cascading effect. That is, one transaction's failure causes many to fail. Rollback is usually implemented with a transaction log or multiversion concurrency control. 
+
+*** Locking vs. multiversioning 
+When using locking. The lock must always be acquired before processing data, including data that is read but not modified. The lock must always be acquired before processing data, including data that is read but not modified. Thus, readers block writers and writers block readers. An alternative to locking is multiversion concurrency control, in which the database provides each reading transaction the prior, unmodified version of data that is being modified by another active transaction. This allows readers to operate without acquiring locks. Thus, in Multiversion Concurrency Ccontrol(MVCC) and who supports it?
+
+* BASE
+Basically Available, Soft state, Eventual consistency 
+
+* Triggers
+** Statement trigger: 
+BEFORE: eg. input validation 
+AFTER: eg: modify another table for audit. 
+#+BEGIN_SRC sql
+/*This is row level trigger, if two rows are updated, two records are inserted into the trigger table. */ 
+CREATE OR REPLACE TRIGGER phone_book_audit
+  AFTER UPDATE ON phone_book FOR EACH ROW
+BEGIN
+  INSERT INTO phone_book_audit 
+    (audit_id,audit_change, audit_l_name, audit_f_name, audit_old_phone_number, audit_new_phone_number, audit_date) 
+    VALUES
+    (audit_id_sequence.nextVal,'Update', :OLD.last_name, :OLD.first_name, :OLD.phone_number, :NEW.phone_number, SYSDATE);
+END;
+#+END_SRC
+The following example replace the last name with an abbreviation if the last name is too long. 
+#+BEGIN_SRC sql
+CREATE OR REPLACE TRIGGER phone_book_insert
+  BEFORE INSERT ON phone_book FOR EACH ROW
+  WHEN (LENGTH(new.last_name) > 10)
+BEGIN
+    :new.last_name := SUBSTR(:new.last_name,0,1);
+END;
+#+END_SRC
