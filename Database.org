@@ -52,3 +52,41 @@ BEGIN
     :new.last_name := SUBSTR(:new.last_name,0,1);
 END;
 #+END_SRC
+* Document vs Relational vs. Graph 
+** History 
+Historically, data started out being represented as one big tree (the hierarchical model), but that wasn't good for many-to-one/many-to-many relationships, so the relational model was invented. More recently, developers found that some applications don't fit well in the relational model either. NoSQL datastores have diverged in two main direction. 
+
+** Document(MongoDB) 
+*** Pros:
++ All data in one place, no need to join multiple tables which could be slow for large table. 
++ Data locality 
+*** Cons: 
++ data duplication when many-to-one or many-to-many relationship happen.
++ What if we only need a small portion of the full document which the database typically load the entire documents. 
+
+** Relational 
+*** Pros: 
++ normalized data store has no duplication, easy to achieve consistency
+*** Cons: 
++ Multiple table joins could be slow. Remedy: It's a common practice to put a caching layer in front of normalized data store. http://www.sarahmei.com/blog/2013/11/11/why-you-should-never-use-mongodb/
+
+** Graph 
++ many-to-many relation. 
++ good for semi-structure data (for example, location in French might has different attributes than the location in US) 
+
+** Convergence 
++ Most relational DB supports query inside XML, some supports json. This allows to represent tree structure 
++ some document store supports join though still slower than relational.
++ Document vs. relation is in fact normalization vs. denormalization. 
+  
+
+* Schema vs. Schemaless
+Schemaless(ie.,/schema-on-read/, that is up to the application code to interprete) is good when 
++ too many type of objects, cumbersome to make each a separate table
+++ the structure is determined by external systems over which you have no control and may change at any time 
+
+Schema(aka.,/schema-on-write/) is good since we can enforce the structure. 
+
+Schema vs. schemaless is analogue to dynamic-type vs. static-type in computer language. 
+
+ 
