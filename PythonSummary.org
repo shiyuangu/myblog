@@ -850,6 +850,7 @@ cursor.execute("select a from tbl where b=? and c=?", (10, 'Hello')) #Error; sho
 cursor.execute("select a from tbl where b=%d and c=%s", (10, 'Hello')) # string will be properly quoted. 
 #+END_SRC
 * matplotlib
+
 If X-window is not setup correctly and matplotlib pylab is not working properly, try:
 ** Use inline
 		%matplotlib inline
@@ -860,3 +861,149 @@ If X-window is not setup correctly and matplotlib pylab is not working properly,
    matplotlib.use('Agg')  # this should put before pylab.plot()
    pylab.plot(x,y)
    pylab.savefig("test.png")
+
+** Artist 
++ matplotlib  contains three layers: FigureCanvas, Renderer and Artist. The FigureCanvas and Renderer handle all the details of talking to user interface toolkits like wxPython or drawing languages like PostScript®, and the Artist handles all the high level constructs like representing and laying out the figure, text, and lines. 
++ Two types of artists: primitives(eg.Line2D, Rectangle, Text, AxesImage, ect.) and containers. The standard use is to create a Figure, and use Figure to create Axes and use Axes instance helper method to create primitives. 
+
+*** Figure
+Here is a summary of what Figure contains: 
+
+#+BEGIN_SRC python
+axes A list of Axes instances (includes Subplot)
+patch The Rectangle background
+images A list of FigureImages patches - useful for raw pixel display
+legends A list of Figure Legend instances (dierent from Axes.legends)
+lines A list of Figure Line2D instances (rarely used, see Axes.lines)
+patches A list of Figure patches (rarely used, see Axes.patches)
+texts A list Figure Text instances
+#+END_SRC
+
+*** Axes: 
+Here is a summary of what axes contains: 
+#+BEGIN_SRC python 
+artists: A list of Artist instances
+patch: Rectangle instance for Axes background
+collections: A list of Collection instances
+images: A list of AxesImage
+legends: A list of Legend instances
+lines: A list of Line2D instances
+patches: A list of Patch instances
+texts: A list of Text instances
+xaxis: matplotlib.axis.XAxis instance
+yaxis: matplotlib.axis.YAxis instance
+#+END_SRC
+
+** transformation and different coordinate systems. 
+ 
+   data -> axes coordinate -> figure coordinate -> display coordinate 
+*** data coordinate
+The userland data coordinate system, controlled by the xlim and ylim. Artist(Axes) handle the xlim, ylim automatically. ax.transData transform user data directly to display coordinates. In fact,  the transData is a composition of several transformations. 
+#+BEGIN_SRC python
+self.transData = self.transScale + (self.transLimits + self.transAxes)
+#+END_SRC 
+
+*** axes coordinate 
+The coordinate system of the Axes; (0,0) is bottom left of the axes, and (1,1) is top right of the axes. ax.transAxes transform the axes coordinate to display coordiante. 
+In the following example, the circle is always in the center of the axes
+#+BEGIN_SRC python
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+fig = plt.figure()
+ax = fig.add_subplot(111)
+x, y = 10*np.random.rand(2, 1000)
+ax.plot(x, y, 'go') # plot some data in data coordinates
+circ = patches.Circle((0.5, 0.5), 0.25, transform=ax.transAxes,
+facecolor='yellow', alpha=0.5)
+ax.add_patch(circ)
+plt.show()
+#+END_SRC
+
+*** figure coordinate 
+The coordinate system of the Figure; (0,0) is bottom left of the figure, and (1,1) is top right of the figure. ax.transFigure transform the figure coordinate to display coordinate. 
+
+*** display coordinate 
+This is the pixel coordinate system of the display; (0,0) is the bottom left of the display, and (width, height) is the top right of the display in pixels. Alternatively,the identity transform (matplotlib.transforms.IdentityTransform()) may be used instead of None
+
+*** Demo for coordinates 
+The following example demonstrate drawing using different coordinates. 
+
+#+BEGIN_SRC python 
+import matplotlib
+import matplotlib.pyplot as plt
+
+fig = plt.gcf()
+
+#the subplot determine how the axes is mapped to figure, i.e., the bounding box the axes. Note that we don't have to divide the figure in the same way as latter. 
+plt.subplot(211) 
+plt.plot([1,2,3], label="test1")
+plt.plot([3,2,1], label="test2")
+# Place a legend above this subplot, expanding itself to fully use the given bounding box. the bbox_to_anchor(left, bottom, width, height) is in axes coordinates. loc = 3  indicates the lower left of the lengend is put on (0.,1.02), Since transAxes map the (0,0), (1,1) to the subplot bounding box, the lengend is outside the subplot bounding box which is ok as seen in the following plot as well. 
+plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,ncol=2, mode="expand", borderaxespad=0.)
+
+# we plot two lines to indicate the suplot bounding box 
+l3 = matplotlib.lines.Line2D([0, 1], [0, 1],transform=plt.gca().transAxes, color='r',figure=fig)
+l4 = matplotlib.lines.Line2D([0, 1], [1, 0],transform=plt.gca().transAxes, color='r', figure=fig)
+
+# the subplot determine how the axes is mapped to figure, i.e., the bounding box the axes. Note that we don't have to divide the figure in the same way as previous plot.  
+plt.subplot(223)
+plt.plot([1,2,3], label="test1")
+plt.plot([3,2,1], label="test2")
+# we plot two lines to indicate the suplot bounding box 
+l5 = matplotlib.lines.Line2D([0, 1], [0, 1],transform=plt.gca().transAxes, color='k',figure=fig)
+l6 = matplotlib.lines.Line2D([0, 1], [1, 0],transform=plt.gca().transAxes, color='k', figure=fig)
+# As shown , this lengend is placed outside the subplot bounding box and hence overlap thhe previous subplot. 
+plt.legend(bbox_to_anchor=(1., 1), loc=3, borderaxespad=0.)
+
+# draw two lines to indicate the bounding box of the figure. 
+l1 = matplotlib.lines.Line2D([0, 1], [0, 1],transform=fig.transFigure, figure=fig)
+l2 = matplotlib.lines.Line2D([0, 1], [1, 0],transform=fig.transFigure, figure=fig)
+
+fig.lines.extend([l1, l2,l3,l4,l5,l6])
+plt.show()
+#+END_SRC
+
+*** Aspect ratio
+In a typical plot, the data is mapped to axes coordinates (0,0) and (1,1). The axes is then mapped to figure with specify size. This process automatically determines how many pixel for one unit of data. This is what happen by default. Sometimes we may want one data unit in x and one data unit in y should represented by the same amount of pixel in the figure. In this case, we need to specify the aspect ratio. We may not be able to map the given range of data to a figure of given size while satisfying the aspect ratio, in this case, we need to adjust either the mapping of the axes to figure or adjust the range the data. 
+http://stackoverflow.com/questions/4747051/matplotlib-subplots-with-fixed-aspect-ratio
+
+** subplot 
++ Subplot is just a special case of an Axes that lives on a regular rows by columns grid of Subplot instances. If you want to create an Axes at an arbitrary location, simply use the add_axes() method which takes a list of [left,bottom,width,height] values in 0-1 relative figure coordinates:
+
+#+BEGIN_SRC python 
+fig2 = plt.figure()
+ax2 = fig2.add_axes([0.15, 0.1, 0.7, 0.3])
+#+END_SRC
+
++ See the Demo example in transformation/coordinate systems.
++ Subplot in a figure has spaces in between so that the ticker/label of different subplots don't overlap.  The padding spaces are configured in matplotlibrc file. Sometimes, default padding cannot always prevent overlap of the ticker/labels in which case, we need to use tight_layout() or manually adjust using /subplots_adjust/ 
+
+#+BEGIN_SRC python 
+# The figure subplot parameters. All dimensions are a fraction of the
+# figure width or height
+#figure.subplot.left : 0.125 # the left side of the subplots of the figure
+#figure.subplot.right : 0.9 # the right side of the subplots of the figure
+#figure.subplot.bottom : 0.1 # the bottom of the subplots of the figure
+#figure.subplot.top : 0.9 # the top of the subplots of the figure
+#figure.subplot.wspace : 0.2 # the amount of width reserved for blank space between␣
+,→subplots
+#figure.subplot.hspace : 0.2 # the amount of height reserved for white space between␣
+,→subplots
+#+END_SRC
+
+*** How to create multiple subplot shared axis  
+#+BEGIN_SRC python 
+# old style
+fig = plt.figure()
+ax1 = fig.add_subplot(221)
+ax2 = fig.add_subplot(222, sharex=ax1, sharey=ax1)
+ax3 = fig.add_subplot(223, sharex=ax1, sharey=ax1)
+ax3 = fig.add_subplot(224, sharex=ax1, sharey=ax1)
+
+# new style method 1; unpack the axes
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
+ax1.plot(x)
+#+END_SRC
+
+
